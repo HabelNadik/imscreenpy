@@ -1,0 +1,5 @@
+nuclei_AreaShape_MajorAxisLength
+nuclei_AreaShape_MinorAxisLength
+nuclei_AreaShape_Orientation
+nuclei_Location_Center_X
+nuclei_Location_Center_Y
