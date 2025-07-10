@@ -2,7 +2,7 @@
 
 This is a (more or less) general-purpose repository to postprocess data from image-based screening experiments that were analysed with CellProfiler.
 
-The overall goal is to quantify differential drug responses for different sub populations in heterogenous cell pools-
+The overall goal is to quantify differential drug responses for different sub populations in heterogenous cell pools.
 
 It was developed during my time at the Boztug laboratory at the St. Anna Children's Cancer Research Institute (CCRI).
 
