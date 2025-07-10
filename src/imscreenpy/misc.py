@@ -140,6 +140,20 @@ def make_wells_for_drug_dict(transfer_table, input_wells):
                 elif transfer_row['Type_A'].endswith('CD'):
                     drug = 'Cytarabine+Daunorubicin'
                     conc = 10
+                elif transfer_row['Type_A'].endswith('BZ'):
+                    drug = 'Bortezomib'
+                    conc = 10
+                elif transfer_row['Type_A'].endswith('ST'):
+                    drug = 'Staurosporine'
+                    conc = 10
+                else:
+                    if 'Type' in transfer_row.keys():
+                        if transfer_row['Type'].endswith('V'):
+                            drug = 'Venetoclax'
+                            conc = 10
+                        elif transfer_row['Type'].endswith('CD'):
+                            drug = 'Cytarabine+Daunorubicin'
+                            conc = 10
             else:
                 drug = 'DMSO'
                 conc = 0
@@ -339,7 +353,11 @@ def print_time(start, end, waitmode=False):
         print('Waited for {} minutes so far'.format(round(elaps, 3)), flush=True)
     return
 
-def convert_annotation_to_local(annotation, replace_research=['/research', 'R:'], replace_nobackup=['/nobackup', 'N:']):
+def convert_annotation_to_local(annotation, nested_replace_patterns):
+    """
+    Convert file paths in an annotation DataFrame to a local format by replacing specified patterns.
+    
+    """
     columns_to_consider = ['RawImageDataPath', 'SegmentationOutputPathUncorrected', 'SegmentationOutputPathCorrected', 'CorrectedImagesPath']
     replacement_dict = dict()
     for col in columns_to_consider:
@@ -347,10 +365,9 @@ def convert_annotation_to_local(annotation, replace_research=['/research', 'R:']
         for val in vals:
             if isinstance(val, str):
                 rep = None
-                if replace_research[0] in val:
-                    rep = val.replace(replace_research[0], replace_research[1])
-                elif replace_nobackup[0] in val:
-                    rep = val.replace(replace_nobackup[0], replace_nobackup[1])
+                for rep_pattern in nested_replace_patterns:
+                    if rep_pattern[0] in val:
+                        rep = val.replace(rep_pattern[0], rep_pattern[1])
                 if not (rep is None):
                     replacement_dict[val] = rep
     out = annotation.replace(replacement_dict)
@@ -361,10 +378,12 @@ def get_fluorophores_and_celltypes(plate_id, annotation, cfg):
     fluos_out = []
     markers_out = []
     for fluo in cfg.fluorophores:
-        marker = sub_table[fluo].values[0].strip()
-        if isinstance(marker, str) and (marker != 'None'):
-            fluos_out.append(fluo)
-            markers_out.append(marker)
+        marker_cell_content = sub_table[fluo].values[0]
+        if isinstance(marker_cell_content, str):
+            marker = marker_cell_content.strip()
+            if isinstance(marker, str) and (marker != 'None'):
+                fluos_out.append(fluo)
+                markers_out.append(marker)
     return fluos_out, markers_out
 
 def get_indices_to_match(input_df, df_to_match_to):
@@ -489,13 +508,3 @@ def format_p_value_string(p_val, n_digits=4):
         p_val_string = '< {}'.format(threshold)
     return p_val_string
 
-
-def table_compatible_with_hit_reporting(in_table):
-    """
-    Check of the table is compatible with the hit reporting function, ie if it has the necessary columns and values
-    """
-    is_compatible = False
-    if ('Concentration' in in_table.columns) and ('Drug' in in_table.columns):
-        if ('DMSO' in in_table['Drug'].values) and (in_table['Concentration'].unique().shape[0] > 3):
-            is_compatible = True
-    return is_compatible

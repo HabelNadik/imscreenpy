@@ -130,8 +130,8 @@ class LD_stain_BayesianModel:
 
 
 
-AML_VIABILITY_LATENT_SCRIPT_DEFAULT_PATH = '/research/lab_gsf/bhaladik/ExTrAct-AML/experimental_code/extract_aml/cluster_scripts/subprocesses/run_viability_prediction_with_latent_on_batch.sh'
-AML_VIABILITY_SCRIPT_DEFAULT_PATH = '/research/lab_gsf/bhaladik/ExTrAct-AML/experimental_code/extract_aml/cluster_scripts/subprocesses/run_fixed_size_viability_prediction.sh'
+AML_VIABILITY_LATENT_SCRIPT_DEFAULT_PATH = 'run_viability_prediction_with_latent_on_batch.sh'
+AML_VIABILITY_SCRIPT_DEFAULT_PATH = 'run_fixed_size_viability_prediction.sh'
 AML_VIABILITY_FILENAME_TEMPLATE = '{}_viability_predictions_gmm_v{}_start{}_end{}.txt'
 AML_VIABILITY_LATENT_FILENAME_TEMPLATE = '{}_viability_predictions_gmm_v{}_start{}_end{}_latent_representation.txt'
 

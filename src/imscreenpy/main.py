@@ -55,6 +55,15 @@ def get_target(patient_id, annotation, cfg=None):
 
 
 def make_target_column(cell_table, marker_columns, target_annotation):
+    """
+    Generate a target column for an input dataframe with single-cells per row
+
+    Arguments:
+    cell_table: pandas dataframe - table with single cells as rows
+    marker_columns: list of str - list of marker columns to use for target generation
+    target_annotation: str - string that describes the target column to generate. Can be a single marker, a combination of markers, or a special string like 'tripleneg'
+    
+    """
     target_bool = np.ones((cell_table.shape[0])).astype(bool)
     if 'tripleneg' in target_annotation.lower():
         for col in marker_columns:
@@ -166,29 +175,14 @@ def full_table_to_well_viability_table(full_table, markers):
     df = pd.DataFrame(df_dict)
     return df
 
-"""
-def get_cell_target_columns(fluorophores_of_interest, cfg, viability_model_name=None):
-    if cfg is None:
-        cfg = config.Config(None)
-    if viability_model_name is None:
-        viability_model_name = cfg.get_viability_model()
-    id_columns = cfg.get_id_columns()
-    morphology_qc_columns = cfg.get_morphology_qc_columns()
-    #fluo_columns = ['cells_dist_Intensity_MedianIntensity_{}'.format(f) for f in fluorophores_of_interest]
-    #fluo_columns_mean = ['cells_dist_Intensity_MeanIntensity_{}'.format(f) for f in fluorophores_of_interest]
-    #cell_columns = fluo_columns + fluo_columns_mean + ['cells_dist_AreaShape_Area']
-    features = cfg.get_model_feature_columns()
-    all_columns = id_columns + cell_columns + features + morphology_qc_columns
-    all_columns = list(set(all_columns))
-    print('Got {} columns for reducing dataframe width based on viability model {}'.format(len(all_columns), viability_model_name))
-    return all_columns
-"""
+
 ############################################################
 ############################################################
 ######### APPLICATION LOGIC TO GET HIT REPORT
 
 
-def preprocess_cp_db(plate, target_connection, target_fluorophores, output_folder, segmentation_folder, cfg, reduction_columns=None, exclude_wells_morph=True, relaxed_image_qc=False, no_qc_exclusion=False):
+def preprocess_cp_db(plate, target_connection, target_fluorophores, output_folder, segmentation_folder,\
+                      cfg, reduction_columns=None, exclude_wells_morph=True, relaxed_image_qc=False, no_qc_exclusion=False):
     """
     Create two clean dataframes from the data, one with features and one with meta information
     arguments:
@@ -197,7 +191,9 @@ def preprocess_cp_db(plate, target_connection, target_fluorophores, output_folde
     output_folder: output folder
     """
     im_qc_plot_filepath = join(output_folder, '{}_image_qc.png'.format(plate))
-    im_outlier_wells = qc_functions.do_image_qc(target_connection, target_fluorophores + ['DNA'], im_qc_plot_filepath, cfg, be_relaxed=relaxed_image_qc, ignore_cellnumbers=relaxed_image_qc)
+    im_outlier_well_df = qc_functions.do_image_qc(target_connection, target_fluorophores + ['DNA'], im_qc_plot_filepath, cfg, be_relaxed=relaxed_image_qc,\
+                                                   ignore_cellnumbers=relaxed_image_qc)
+    im_outlier_wells = list(im_outlier_well_df[cfg.im_well_cpc].unique())
     if no_qc_exclusion:
         im_outlier_wells = []
         exclude_wells_morph = False
@@ -211,13 +207,16 @@ def preprocess_cp_db(plate, target_connection, target_fluorophores, output_folde
     id_df_model_add_columns = list(set(id_df_model_add_columns))
     if no_qc_exclusion:
         feature_df, id_df = df_functions.split_dataframe(full_dataframe, cfg, id_df_add_columns=id_df_model_add_columns)
+        return feature_df, id_df
     else:
         feature_df, id_df = qc_functions.do_morphology_qc(full_dataframe, segmentation_folder, output_folder, exclude_wells_morph=exclude_wells_morph, cfg=cfg, id_df_add_columns=id_df_model_add_columns)
-    return feature_df, id_df
+        return feature_df, id_df, im_outlier_well_df
 
 
-def run_preprocessing_qc_workflow(plate_id, target_connection, output_folder, segmentation_folder, cfg, target_fluorophores, checkpoint, transferlist, exclude_wells_morph=False, relaxed_image_qc=False, is_last=False):
+def run_preprocessing_qc_workflow(plate_id, target_connection, output_folder, segmentation_folder, cfg, target_fluorophores,\
+                                   checkpoint, transferlist, exclude_wells_morph=False, relaxed_image_qc=False, is_last=False, return_qc_df=False, no_well_exclusion=False):
     feature_df_pre_checkpoint_path = join(output_folder, '{}_features_preprocessing.csv'.format(plate_id))
+    qc_checkpoint_path = join(output_folder, '{}_image_qc_excluded_wells.csv'.format(plate_id))
     if is_last:
         id_df_pre_checkpoint_path = join(output_folder, '{}_id_df.csv'.format(plate_id))    
     else:
@@ -229,13 +228,17 @@ def run_preprocessing_qc_workflow(plate_id, target_connection, output_folder, se
         return feature_df, id_df
     else:
         target_column_list = cfg.get_all_set_columns()#get_cell_target_columns(target_fluorophores, cfg)
-        feature_df, id_df = preprocess_cp_db(int(plate_id), target_connection, target_fluorophores, output_folder, segmentation_folder, cfg=cfg, reduction_columns=target_column_list, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc)
+        feature_df, id_df, well_qc_df = preprocess_cp_db(int(plate_id), target_connection, target_fluorophores, output_folder,\
+                segmentation_folder, cfg=cfg, reduction_columns=target_column_list, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc, no_qc_exclusion=no_well_exclusion)
         id_df = misc.add_treatments(id_df, plate_id, transferlist)[0]
         print_fancy_message('Set up feature and info dataframes')
         if checkpoint:
             feature_df.to_csv(feature_df_pre_checkpoint_path)
             id_df.to_csv(id_df_pre_checkpoint_path)
+            well_qc_df.to_csv(qc_checkpoint_path, index=False)
             print_fancy_message('Checkpointing: Saving pre feature and id df')
+        if return_qc_df:
+            return feature_df, id_df, well_qc_df
         return feature_df, id_df
     
 
@@ -260,7 +263,7 @@ def run_celltype_processing_workflow(feature_df, id_df, target_fluorophores, cel
 
 
 def pre_hit_workflow(target_connection, annotation, output_folder,\
-     transferlist, plate_id, cfg, checkpoints=False, exclude_wells_morph=True, relaxed_image_qc=False):
+     transferlist, plate_id, cfg, checkpoints=False, exclude_wells_morph=True, relaxed_image_qc=False, no_well_exclusion=False):
     ## getting required info from config
     expression_model_name = cfg.get_expression_model()
     viability_model_name = cfg.get_viability_model()
@@ -274,7 +277,7 @@ def pre_hit_workflow(target_connection, annotation, output_folder,\
     last_df_checkpoint_path = join(output_folder, '{}_id_df.csv'.format(plate_id))
     #### set paths for checkpointing based on whether models are selected
     ## viability prediction is optional
-    if not (cfg.get_viability_model().lower() == 'none'):
+    if (not (cfg.get_viability_model() is None)) and (not (cfg.get_viability_model().lower() == 'none')):
         id_df_viabiltiy_checkpoint_path = join(output_folder, '{}_id_df.csv'.format(plate_id))
         last_step = 'viability'
         id_df_viabiltiy_checkpoint_path = last_df_checkpoint_path
@@ -282,7 +285,7 @@ def pre_hit_workflow(target_connection, annotation, output_folder,\
         last_step = 'celltypes'
         id_df_viabiltiy_checkpoint_path = None
     ## celltype prediction is optional
-    if not (cfg.get_expression_model().lower() == 'none'):
+    if (not (cfg.get_expression_model() is None)) and (not (cfg.get_expression_model().lower() == 'none')):
         feature_df_celltypes_checkpoint_path = join(output_folder, '{}_features_celltypes.csv'.format(plate_id))
         id_df_celltypes_checkpoint_path = join(output_folder, '{}_id_df_celltypes.csv'.format(plate_id))
         if last_step == 'celltypes':
@@ -306,7 +309,7 @@ def pre_hit_workflow(target_connection, annotation, output_folder,\
             feature_df, id_df = run_celltype_processing_workflow(None, None, target_fluorophores, celltypes, segmentation_folder, output_folder, plate_id, cfg, expression_model_name, annotation, checkpoints, is_last=False)
         else: ## otherwise, start with preprocessing df
             feature_df, id_df = run_preprocessing_qc_workflow(plate_id, target_connection, output_folder, segmentation_folder, cfg, target_fluorophores,\
-                                                    checkpoints, transferlist, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc, is_last= last_step == 'preprocessing')
+                                                    checkpoints, transferlist, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc, is_last= last_step == 'preprocessing', no_well_exclusion=no_well_exclusion)
             if last_step == 'preprocessing': # return it if this is the last step
                 return id_df
             else:
@@ -319,11 +322,11 @@ def pre_hit_workflow(target_connection, annotation, output_folder,\
         id_df.to_csv(id_df_viabiltiy_checkpoint_path)
         return id_df
 
-def full_table_from_folders(database_paths, plates, transferlist, annotation, output_folder, cfg, checkpoints=False, exclude_wells_morph=True, relaxed_image_qc=False):
+def full_table_from_folders(database_paths, plates, transferlist, annotation, output_folder, cfg, checkpoints=False, exclude_wells_morph=True, relaxed_image_qc=False, no_well_exclusion=False, intensity_column_suffix=''):
     id_dfs = []
     for i, db_path in enumerate(database_paths):
         fluos, markers = misc.get_fluorophores_and_celltypes(plates[i], annotation, cfg)
-        cfg.set_intensity_columns(fluos)
+        cfg.set_intensity_columns(fluos, intensity_column_suffix=intensity_column_suffix)
         if ('LiveOrDye' in markers):
             print('Found viability dye in markers. Adding additional feature columns')
             print('Previous number of columns is {}'.format(len(cfg.get_model_feature_columns())))
@@ -333,10 +336,16 @@ def full_table_from_folders(database_paths, plates, transferlist, annotation, ou
             seg_folder = get_segmentation_folder(plates[i], annotation, cfg=cfg)
             db_functions.combine_databases(seg_folder, cfg=cfg, output_db='benchmark_db.db', reduce_table_width=False)
         conn = sqlite3.connect(db_path)
-        id_df = pre_hit_workflow(conn, annotation, output_folder, transferlist, plates[i], cfg, checkpoints=checkpoints, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc)
-        id_df = id_df.reindex(index=np.arange(id_df.shape[0]))
+        id_df = pre_hit_workflow(conn, annotation, output_folder, transferlist, plates[i], cfg, checkpoints=checkpoints, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc, no_well_exclusion=no_well_exclusion)
+        id_df = id_df.assign(object_index=np.arange(id_df.shape[0]))
+        id_df = id_df.set_index('object_index')
+        #id_df = id_df.reindex(index=np.arange(id_df.shape[0]))
         id_dfs.append(id_df)
-    out = pd.concat(id_dfs)
+    if len(id_dfs) == 1:
+        out = id_dfs[0]
+    else:
+        common_columns = set(list(id_dfs[0].columns)).intersection(*[set(list(df.columns)) for df in id_dfs[1:]])
+        out = pd.concat([f[list(common_columns)] for f in id_dfs])
     return out
 
 def write_report_plots(well_viability_table, output_folder, viability_tablename, plates_prefix, target):
@@ -351,9 +360,12 @@ def write_report_plots(well_viability_table, output_folder, viability_tablename,
     inh_report.pharmacoscopy_style_plot(target, report_savename.split('.')[0], savetitle=report_savepath, add_scatter=False, plot_all_bars=True)
     return
 
-def run_main(patient_id, annotation, transferlist, db_filename, output_folder, cfg, checkpoints=False, exclude_wells_morph=True, relaxed_image_qc=False):
+def run_main(patient_id, annotation, transferlist, db_filename, output_folder, cfg, checkpoints=False, exclude_wells_morph=True, relaxed_image_qc=False, use_plate_id=False, no_well_exclusion=False):
     ### generate full table of viable cells
-    plates = get_plates(patient_id, annotation, cfg=cfg)
+    if use_plate_id:
+        plates = [patient_id]
+    else:
+        plates = get_plates(patient_id, annotation, cfg=cfg)
     print('Processing the following plates for patient id {}'.format(patient_id))
     print(plates)
     segmentation_folders = [get_segmentation_folder(plate, annotation, cfg=cfg) for plate in plates]
@@ -361,7 +373,7 @@ def run_main(patient_id, annotation, transferlist, db_filename, output_folder, c
     print(segmentation_folders)
     db_paths = [join(seg_folder, db_filename) for seg_folder in segmentation_folders]
     
-    full_table = full_table_from_folders(db_paths, plates, transferlist, annotation, output_folder, cfg, checkpoints=checkpoints, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc)
+    full_table = full_table_from_folders(db_paths, plates, transferlist, annotation, output_folder, cfg, checkpoints=checkpoints, exclude_wells_morph=exclude_wells_morph, relaxed_image_qc=relaxed_image_qc, no_well_exclusion=no_well_exclusion)
     ## store table
     fst_name = plates[0]
     if len(plates) > 1:
@@ -388,31 +400,29 @@ def run_main(patient_id, annotation, transferlist, db_filename, output_folder, c
             viability_table_populations.append(target)
     well_viability_table = full_table_to_well_viability_table(full_table, viability_table_populations)
     well_viability_table.to_csv(join(output_folder, viability_tablename))
-    if misc.table_compatible_with_hit_reporting(well_viability_table):
-        if isinstance(target, str):
-            write_report_plots(well_viability_table, output_folder, viability_tablename, plates_prefix, target)
-        else:
-            for population in target:
-                write_report_plots(well_viability_table, output_folder, viability_tablename, plates_prefix, population)
+    if isinstance(target, str):
+        write_report_plots(well_viability_table, output_folder, viability_tablename, plates_prefix, target)
+    else:
+        for population in target:
+            write_report_plots(well_viability_table, output_folder, viability_tablename, plates_prefix, population)
     
 
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    #parser.add_argument('PatientID', help='internal id of patient', dest='PatientID', type=str)
     parser.add_argument('ExperimentID', help='internal id of experiment: may be a patient, sample or other entity', type=str)
-    #parser.add_argument('output_folder', help='Folder to write results to', dest='output_folder', type=str, nargs='?', default='/nobackup/lab_gsf/bhaladik/ExTrAct-AML/all_patient_outputs')
-    parser.add_argument('output_folder', help='Folder to write results to', type=str, nargs='?', default='/nobackup/lab_gsf/bhaladik/ExTrAct-AML/all_patient_outputs')
-    parser.add_argument('--annotation_folder', help='folder with image files to process', dest='annotation_folder', type=str, default='/research/lab_gsf/bhaladik/ExTrAct-AML/experimental_code/extract_aml/annotations/')
-    parser.add_argument('--expression_model', help='Expression model to use. Only Bayesian avaialble now', dest='expression_model', default='AAE', type=str)
-    parser.add_argument('--viability_model', help='Viability model to use default is Bayes', dest='viability_model', default='GMM_AAE_v16', type=str)
+    parser.add_argument('output_folder', help='Folder to write results to', type=str, nargs='?')
+    parser.add_argument('--annotation_folder', help='folder with image files to process', dest='annotation_folder', type=str)
+    parser.add_argument('--expression_model', help='Model for predicting cell types or marker expression', dest='expression_model', type=str)
+    parser.add_argument('--viability_model', help='Viability model to use', dest='viability_model', type=str)
     parser.add_argument('--checkpoints', help='Whether to store data from certain checkpoitns and load it again to continue', action='store_true', default=True, dest='checkpoints')
     parser.add_argument('--skip_reports', help='whether to skip the creation of the full inhibition report', action='store_true', default=False, dest='skip_reports')
     parser.add_argument('--no_morphology_well_exclusion', help='whether to apply a threshold of cells that pass qc to exclude wells', action='store_true', default=False, dest='no_morphology_well_exclusion')
     parser.add_argument('--relaxed_image_qc', help='do image qc with 4 std.devs instead of 3', dest='relaxed_image_qc', action='store_true', default=False)
-    parser.add_argument('--config_prefix', dest='config_prefix', type=str, default='aml_')
-    parser.add_argument('--write_latent', dest='write_latent', action='store_true', default=False, help='whether to also write latent representations of model outputs')
+    parser.add_argument('--config_prefix', dest='config_prefix', help='the prefix of the config files for this project', type=str, default='aml_')
+    parser.add_argument('--write_latent', dest='write_latent', action='store_true', default=False, help='whether to also write latent representations of model outputs when using deep learning models')
+    parser.add_argument('--single_plate_id', dest='single_plate_id', action='store_true', default=False, help='whether to use the plate id as the experiment id and thus only process one plate. This is useful for debugging and testing')
 
     ### additional important variables
     annotation_filename = 'annotations.xls'
@@ -449,8 +459,8 @@ if __name__ == "__main__":
     print(cfg.get_model_feature_columns())
     annotation = pd.read_excel(annotation_path, sheet_name=0)
     drug_an_folder = join(annotation_folder, 'drug_annotations')
-    transferlist = get_transferlist(exp_id, annotation, join(drug_an_folder, 'transferlists'), cfg=cfg)
+    transferlist = get_transferlist(exp_id, annotation, join(drug_an_folder, 'transferlists'), cfg=cfg, from_plate_id=args.single_plate_id)
     print('Loaded transferlist of shape {}'.format(transferlist.shape))
     
     
-    run_main(exp_id, annotation, transferlist, full_db_name, out_folder, cfg, checkpoints=args.checkpoints , exclude_wells_morph=morph_ex, relaxed_image_qc=relax_image_qc)
+    run_main(exp_id, annotation, transferlist, full_db_name, out_folder, cfg, checkpoints=args.checkpoints , exclude_wells_morph=morph_ex, relaxed_image_qc=relax_image_qc, use_plate_id=args.single_plate_id)

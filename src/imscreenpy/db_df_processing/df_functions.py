@@ -72,7 +72,7 @@ def remove_cell_related_columns(input_df):
     cols_to_keep = [f for f in input_df.columns if (not ('cells_dist' in f))]
     return input_df[cols_to_keep]
 
-def full_table_to_well_viability_table(full_table, markers):
+def full_table_to_well_viability_table(full_table, markers, viability_column_name='Viable'):
     #### determine array size
     plates = list(set(full_table['Plate'].values))
     unique_well_plate_list = []
@@ -95,7 +95,10 @@ def full_table_to_well_viability_table(full_table, markers):
         plate = unique_well_plate_list[i][0]
         well = unique_well_plate_list[i][1]
         well_table = full_table[(full_table['Metadata_Well'] == well) & (full_table['Plate'] == plate)]
-        via_well_table = well_table[well_table['Viable'].values.astype(bool)]
+        if (viability_column_name is None):
+            via_well_table = well_table
+        else:
+            via_well_table = well_table[well_table[viability_column_name].values.astype(bool)]
         viable_cells_all[i] = via_well_table.shape[0]
         for k in range(len(markers)):
             viable_cells_per_celltype[i,k] = np.sum(via_well_table[markers[k]])

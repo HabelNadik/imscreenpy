@@ -75,6 +75,8 @@ class ClusterPredictionModel(PredictionModel):
                 channel_list = [f.split('_')[0] for f in self.channel_id_column]
                 target_channel = "\'" + ','.join(channel_list) + "\'"
             command_exports = "--export=images_path={},target_channels={},df_path={},outpath={},start_index={},end_index={},model_identifier={}".format(raw_image_data_path, target_channel, id_df_path, prediction_filepath, last_batch_index, batch_index, self.version_number)
+        else:
+            command_exports = "--export=images_path={},target_channel_id={},df_path={},outpath={},start_index={},end_index={}".format(raw_image_data_path, int(channel_id), id_df_path, prediction_filepath, last_batch_index, batch_index)
         if self.predict_latent:
             command = "sbatch {} {} {}".format(command_jobname, command_exports, self.latent_script_path)
         else:    
@@ -105,10 +107,7 @@ class ClusterPredictionModel(PredictionModel):
         else:
             channel_id = int(plate_df[self.channel_id_column].values[0])
         num_files_to_be_generated = 0
-        if input_df.shape[0] < self.partition_size:
-            batch_indices = [input_df.shape[0]]
-        else:
-            batch_indices = [i for i in range(self.partition_size, input_df.shape[0], self.partition_size)] + [input_df.shape[0]]
+        batch_indices = [i for i in range(self.partition_size, input_df.shape[0], self.partition_size)] + [input_df.shape[0]]
         last_batch_index = 0
         filepaths = []
         for _, batch_index in enumerate(batch_indices):
@@ -136,10 +135,7 @@ class ClusterPredictionModel(PredictionModel):
                 pred_array = np.zeros((input_df.shape[0]))
                 if self.predict_latent:
                     latent_pred_array = np.zeros((input_df.shape[0], self.latent_dimensionality))
-                if input_df.shape[0] < self.partition_size:
-                    batch_indices = [input_df.shape[0]]
-                else:
-                    batch_indices = [i for i in range(self.partition_size, input_df.shape[0], self.partition_size)] + [input_df.shape[0]]
+                batch_indices = [i for i in range(self.partition_size, input_df.shape[0], self.partition_size)] + [input_df.shape[0]]
                 last_batch_index = 0
                 for _, batch_index in enumerate(batch_indices):
                     output_filename = self.make_output_filename(plate, last_batch_index, batch_index)
@@ -150,21 +146,14 @@ class ClusterPredictionModel(PredictionModel):
                         time.sleep(3)
                         prediction = np.loadtxt(prediction_filepath)
                     print('At batch index {} trying to write array of shape {} into shape {}'.format(batch_index, prediction.shape, pred_array.shape))
-                    pred_array[last_batch_index:batch_index] = np.argmax(prediction, axis=1)
+                    if len(prediction.shape) > 1: ## handling of edge case where there is only one prediction
+                        pred_array[last_batch_index:batch_index] = np.argmax(prediction, axis=1)
+                    else:
+                        pred_array[last_batch_index:batch_index] = np.argmax(prediction)
                     if self.predict_latent:
                         latent_filename = self.make_output_filename(plate, last_batch_index, batch_index, latent=True)
                         latent_prediction_filepath = os.path.join(target_folder, latent_filename)
-                        if latent_prediction_filepath.endswith('.txt'):
-                            latent_prediction = np.loadtxt(latent_prediction_filepath)
-                        else:
-                            latent_prediction = np.load(latent_prediction_filepath)
-                        if (latent_prediction.shape[0] == 0):
-                            print('Latent Prediction not fully here. Waiting 3 seconds and trying again')
-                            time.sleep(3)
-                            if latent_prediction_filepath.endswith('.txt'):
-                                latent_prediction = np.loadtxt(latent_prediction_filepath)
-                            else:
-                                latent_prediction = np.load(latent_prediction_filepath)
+                        latent_prediction = np.loadtxt(latent_prediction_filepath)
                         latent_pred_array[last_batch_index:batch_index,:] = latent_prediction
                     last_batch_index = batch_index
                 num_positive = np.sum(pred_array)

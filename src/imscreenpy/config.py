@@ -46,12 +46,20 @@ class Config:
         self.col_cpc = "Metadata_column"
         self.field_cpc = "Metadata_field"
         self.well_cpc = 'Metadata_Well'
+        #### same for the image metadata
+        self.im_well_cpc = 'Image_Metadata_Well'
+        self.im_row_cpc = "Image_Metadata_row"
+        self.im_col_cpc = "Image_Metadata_column"
+        self.im_field_cpc = "Image_Metadata_field"
+        self.im_metadata_columns = [self.im_well_cpc, self.im_row_cpc, self.im_col_cpc, self.im_field_cpc]
+
         self.un_id_cpc = 'unique_image_id'
         self.predict_latent = predict_latent
         ## information taht we need to store while the pipeline is run
         if (copy_cfg is None):
             self.viability_model_name = None
             self.expression_model_name = None
+            self.expression_model_class_name = None
             ## model scripts and patterns
             self.viability_latent_script_path = None
             self.viability_script_path = None
@@ -71,6 +79,7 @@ class Config:
             self.db_im_table_name = None
             self.expression_model_columns = []
             self.viability_model_columns = []
+            self.im_qc_ignore_fluorophores = []
             self._load_class_assignments()
         else:
             self.viability_model_name = copy_cfg.viability_model_name
@@ -95,6 +104,10 @@ class Config:
             self.expression_model_columns = copy_cfg.expression_model_columns
             self.viability_model_columns = copy_cfg.viability_model_columns
             self.predict_latent = copy_cfg.predict_latent
+            self.im_qc_ignore_fluorophores = copy_cfg.im_qc_ignore_fluorophores
+            ## attributes to check for since they may only be present in newer versions
+            if 'expression_model_class_name' in copy_cfg.__dict__.keys():
+                self.expression_model_class_name = copy_cfg.expression_model_class_name
 
     
     ### functions to load relevant data from files
@@ -148,13 +161,14 @@ class Config:
     def get_model_feature_columns(self):
         return self.model_feature_columns
     
-    def set_intensity_columns(self, target_fluorophores, viability_dye_used=False):
+    def set_intensity_columns(self, target_fluorophores, intensity_column_suffix='IllumCorrected'):
         if not (self.fluo_column_patterns is None):
             self.intensity_columns = []
             for fluo in target_fluorophores:
                 for pattern in self.fluo_column_patterns:
                     self.intensity_columns.append(pattern.format(fluo))
-                    self.intensity_columns.append(pattern.format(fluo)+'IllumCorrected')
+                    if isinstance(intensity_column_suffix, str) and (len(intensity_column_suffix) > 0):
+                        self.intensity_columns.append(pattern.format(fluo) + intensity_column_suffix)
         else:
             self.intensity_columns = None
         return
@@ -235,6 +249,13 @@ class Config:
                         self.db_im_table_name = value
                     elif key == 'FLUO_COLUMN_PATTERNS':
                         self.fluo_column_patterns = [f.strip() for f in value.strip().split(',')]
+        return
+    
+    def get_im_qc_ignore_flurophores(self):
+        return self.im_qc_ignore_fluorophores
+    
+    def set_im_qc_ignore_flurophores(self, value):
+        self.im_qc_ignore_fluorophores = value
         return
 
     

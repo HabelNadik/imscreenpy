@@ -35,6 +35,139 @@ def make_ticks_and_labels(input_concentrations):
             tick_labels.append(tick_format_string.format(tick_num))
     return ticks, tick_labels
 
+def plot_response_curve(viability_df, target, target_drug, conc_col='Concentration', drug_col='Drug', nctrl='DMSO', in_ax=None, colors=['#ff6961', '#3FB06A', '#403f3f']):
+    """
+    Plot dose response curve for a given column in a viability dataframe
+
+    Parameters:
+    -----------
+    viability_df : pd.DataFrame
+        DataFrame containing viability data
+    target_column : str or list of str
+        List of columns or column in the DataFrame to plot
+    target_drug : str
+        Drug name to plot, if None, we assume that the dataframe contains a single drug, 
+        will throw an error if there is more than one drug and target_drug is set to None
+    conc_col : str
+        Name of the column that stores concentrations. Default Concentration
+    drug_col : str
+        Name of the column that stores drug anmes
+    nctrl : str
+        Name of the control condition, default DMSO. If None, no normalization to control will be performed
+    in_ax : matplotlib.pyplot.Axes
+        Axes to plot on, if None, a new figure is created and returned
+
+    Returns:
+    --------
+    matplotlib.pyplot.Axes
+        Axes object containing the plot, or matplotlib.pyplot.Figure if in_ax is None
+    """
+    if isinstance(target, str):
+        target = [target]
+    if not isinstance(colors, list):
+        colors = [colors] * len(target)
+    all_x_scatter = []
+    all_y_scatter = []
+    all_x_curve = []
+    all_y_curve = []
+    
+    for target_column in target:
+        if not (nctrl is None):
+            ## we assume that our target values are not normalized, so we we will do that here
+            nctrl_mean = np.nanmean(viability_df[viability_df['Drug'] == nctrl][target_column].to_numpy())
+            normed_vals = viability_df[target_column].to_numpy() / nctrl_mean
+            viability_df = viability_df.assign(**{target_column: normed_vals})
+            drug_df = viability_df[viability_df[drug_col] == target_drug].sort_values(by='Concentration')
+            concentrations = [0., 0., 0.] + drug_df[conc_col].to_list()
+            target_values = [1., 1., 1.] + drug_df[target_column].to_list()
+        else:
+            drug_df = viability_df[viability_df[drug_col] == target_drug].sort_values(by='Concentration')
+            concentrations = drug_df[conc_col].to_list()
+            target_values = drug_df[target_column].to_list()
+        min_ref_conc = np.nanmin(drug_df['Concentration'].values)
+        params, _ = fit_sigmoid(concentrations, target_values)
+
+        log_concentrations_scatter = concentrations_to_log_scale(concentrations)
+
+        x,y = make_curve_values(params, min(concentrations), max(concentrations), ref_min_conc=min_ref_conc)
+        log_x_curve = concentrations_to_log_scale(x, ref_min_conc=min_ref_conc)
+
+        all_x_scatter.append(log_concentrations_scatter)
+        all_y_scatter.append(target_values)
+        all_x_curve.append(log_x_curve)
+        all_y_curve.append(y)
+
+    ticks, tick_labels = make_ticks_and_labels(log_concentrations_scatter)
+
+    if in_ax is None:
+        fig, ax = plt.subplots()
+        return_obj = fig
+    else:
+        ax = in_ax
+    z_order_index = 1
+    for i, target_column in enumerate(target):
+        ax.plot(all_x_curve[i], all_y_curve[i], color=colors[i], linewidth=1.5, zorder=z_order_index)
+        z_order_index += 1
+    for i, target_column in enumerate(target):    
+        ax.scatter(all_x_scatter[i], all_y_scatter[i], color=colors[i], edgecolors='black', label=target_column, zorder=z_order_index)
+        z_order_index += 1
+    ax.set_xticks(ticks)
+    ax.set_xticklabels(tick_labels)
+    
+    ax.set_ylim(-0.1, 1.35)
+    if nctrl is None:
+        ax.set_ylabel('Viability', fontsize=9)
+    else:
+        ax.set_ylabel('Relative viability', fontsize=9)
+    ax.set_xlabel('Concentration', fontsize=9)
+    ax.set_title(target_drug, fontsize=11)
+    ax.legend()
+    if in_ax is None:
+        return fig
+    else:
+        return ax
+
+def plot_curves_for_drug(target_populations, target_drug, viability_df, conc_col='Concentration', drug_col='Drug', nctrl='DMSO', in_ax=None, colors=None):
+    """
+    Plot dose response curves for a given drug and target populations
+
+    Parameters:
+    -----------
+    target_populations : list of str
+        List of target populations to plot
+    target_drug : str
+        Drug name to plot
+    viability_df : pd.DataFrame
+        DataFrame containing viability data
+    conc_col : str
+        Name of the column that stores concentrations. Default Concentration
+    drug_col : str
+        Name of the column that stores drug names. Default Drug
+    nctrl : str
+        Name of the control condition, default DMSO. If None, no normalization to control will be performed
+    in_ax : matplotlib.pyplot.Axes
+        Axes to plot on, if None, a new figure is created and returned
+    colors : list of str or None
+        List of colors for each population, if None, default colors are used
+
+    Returns:
+    --------
+    matplotlib.pyplot.Axes or matplotlib.pyplot.Figure
+        Axes object containing the plot, or matplotlib.pyplot.Figure if in_ax is None
+    """
+    
+    if in_ax is None:
+        fig, ax = plt.subplots(figsize=(8, 5))
+    else:
+        ax = in_ax
+
+    if colors is None:
+        colors = ['#ff6961', '#77dd77', '#fdfd96', '#84b6f4', '#ffb347'][:len(target_populations)]
+
+    for i, pop in enumerate(target_populations):
+        ax = plot_response_curve(viability_df, pop, target_drug=target_drug, conc_col=conc_col, drug_col=drug_col, nctrl=nctrl, in_ax=ax, color=colors[i])
+
+    return ax
 
 def plot_curves(auc_dicts, rbf_dicts, sorted_compounds, highlight_array, savename=None, show_highlight_dots=True, highlight_scores=None, rec_layout=True, input_ranks=None, ic50_string_list=None):
     n_figures = len(sorted_compounds)

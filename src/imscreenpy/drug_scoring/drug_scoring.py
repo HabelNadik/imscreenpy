@@ -5,6 +5,16 @@ from scipy import stats
 import sklearn
 
 def drug_sigmoid(x, a, b, c):
+    """
+    Fit a sigmoidal curve to the data using input x values and parameters a, b, and c
+
+    input parameters:
+    x (np.ndarray) - x values for which we want to calculate the sigmoidal curve
+    a (float) - minimum value of the curve
+    b (float) - inflection point of the curve
+    c (float) - slope of the curve
+    
+    """
     x = np.log10(x + 1)
     x += np.amin(x)
     x /= np.amax(x)
@@ -16,24 +26,67 @@ def drug_sigmoid(x, a, b, c):
 
 
 def fit_sigmoid(x, y, verbose=False, sigma=None, absolute_sigma=False):
+    """
+    Fit a sigmoidal curve to the data using input x and y values.
+
+    input parameters:
+    x (np.ndarray) - x values for which we want to calculate the sigmoidal curve
+    y (np.ndarray) - y values for which we want to calculate the sigmoidal curve
+    verbose (bool) - whether to print out verbose information
+    sigma (np.ndarray) - sigma values for the curve fit
+    absolute_sigma (bool) - whether to use absolute sigma values
+    
+    """
     if not isinstance(x, np.ndarray):
         x = np.array(x)
     if not isinstance(y, np.ndarray):
         y = np.array(y)
     unique_x = np.unique(x)
-    initial_guess = [np.nanmin(y), np.mean(unique_x), 5.]
-    try:
-        opt, pcov = curve_fit(drug_sigmoid, x, y, method='dogbox', bounds=([-1, np.mean([unique_x[0], unique_x[1]]), 1.],[1, 10., 10.]), p0=initial_guess, sigma=sigma, absolute_sigma=absolute_sigma)
-        #opt, pcov = curve_fit(drug_sigmoid, x, y, method='dogbox', bounds=([np.finfo(np.float64).eps, np.mean([unique_x[0], unique_x[1]]), 2.],[1, 10., 10.]), p0=initial_guess)
-    except (ValueError, RuntimeError, np.linalg.LinAlgError, Exception):
-        if verbose:
-            print('caught fit error, creating pseudo fit')
-        if np.mean(y) < 1.:
-            opt = [np.mean(y[(x != (unique_x[0]))]), np.mean([unique_x[0], unique_x[1]]), 5.]
-            pcov = np.zeros((3,3))
-        else:
-            opt = [1., 0.01, 1.]
-            pcov = np.zeros((3,3))
+    #initial_guess = [np.nanmin(y), np.mean(unique_x), 5.]
+    if verbose:
+        print(x)
+        print(y)
+    ### use x and y to determine the bounds and the initial guess for the curve fit
+    ##### bounds for minimum are based on y, slope is based is based on experience
+    min_guess = np.nanmin(y)
+    slope_guess = 5.
+    #### inflection point will be guessed based on the largest drop in y values
+    if unique_x.shape[0] <= 2:
+        inflection_point_guess = np.nanmean(unique_x)
+    else:
+        previous_y = np.nanmean(y[x == unique_x[0]])
+        largest_drop = 0
+        inflection_point_guess = np.nanmean(unique_x)
+        for i, x_val in enumerate(unique_x[1:]):
+            drop = previous_y - np.nanmean(y[x == x_val])
+            if drop > largest_drop:
+                largest_drop = drop
+                inflection_point_guess = x_val#np.mean([previous_x, x_val])
+            previous_y = np.nanmean(y[x == x_val])
+    initial_guess = [min_guess, inflection_point_guess, slope_guess]
+    if verbose:
+        print('Initial guess for min val, inflection point and slope are: {}'.format(initial_guess))
+    if unique_x.shape[0] >= 3:
+        try:
+            opt, pcov = curve_fit(drug_sigmoid, x, y, method='dogbox', bounds=([-1, np.mean([unique_x[0], unique_x[1]])*0.75, 0.5],[1, np.nanmax(x), 10.]), p0=initial_guess, sigma=sigma, absolute_sigma=absolute_sigma)
+            #opt, pcov = curve_fit(drug_sigmoid, x, y, method='dogbox', bounds=([np.finfo(np.float64).eps, np.mean([unique_x[0], unique_x[1]]), 2.],[1, 10., 10.]), p0=initial_guess)
+        except (ValueError, RuntimeError, np.linalg.LinAlgError, Exception):
+            if verbose:
+                print('caught fit error, creating pseudo fit')
+            if np.mean(y) < 1.:
+                opt = [np.mean(y[(x != (unique_x[0]))]), np.mean([unique_x[0], unique_x[1]]), 5.]
+                pcov = np.zeros((3,3))
+            else:
+                opt = [1., 0.01, 1.]
+                pcov = np.zeros((3,3))
+    elif (np.mean(y) < 1.) and (unique_x.shape[0] == 2):
+        opt = [np.mean(y[(x != (unique_x[0]))]), np.mean([unique_x[0], unique_x[1]]), 5.]
+        pcov = np.zeros((3,3))
+    else:
+        opt = [1., 0.01, 1.]
+        pcov = np.zeros((3,3))
+    if verbose:
+        print('Parameters for min val, inflection point and slope are: {}'.format(opt))
     return opt, pcov
 
 
@@ -309,7 +362,7 @@ def score_compound_classes(target_auc_dict, target_rbf_dict, annotation, compari
 
 def make_ic50_dict(compounds, rbf_dict, curve_param_dict=None):
     """
-    Make a dictionary that contains IC50 values for each compoound if available
+    Make a dictionary that contains IC50 values for each compoound whereever available
     """
     out_dict = dict()
     for cpd in compounds:
@@ -328,6 +381,14 @@ def make_ic50_dict(compounds, rbf_dict, curve_param_dict=None):
     return out_dict
 
 def approximate_ic50(rbf_dict, compound, curve_params=None):
+    """
+    Approximate the IC50 value for a compound using the sigmoidal curve fit
+
+    input parameters:
+    rbf_dict (dict) - dictionary containing the dose response curve information
+    compound (str) - compound for which we want to calculate the IC50 value
+    curve_params (list) - parameters of the sigmoidal curve fit
+    """
     concs, rbfs, rbfs_std, points = rbf_dict[compound]
     if (curve_params is None):
         rbfs_expanded = [1., 1., 1.]
@@ -399,6 +460,8 @@ def process_conc(conc):
             newconc = round_conc(float(left) + float(right))
         else:
             newconc = round_conc(float(conc))
+    else:
+        newconc = conc
     return newconc
 
 
@@ -508,7 +571,7 @@ def make_sampling_array(sorted_nested_replicate_values):
     
 
 
-def calcuate_auc_std_err(sorted_concentrations, sorted_nested_replicate_values, n_iterations=1000):
+def calcuate_auc_std_err(sorted_concentrations, sorted_nested_replicate_values, n_iterations=1000, ref_concentrations=[0.01, 0.1, 1.]):
     aucs = []
     arr_for_sampling = make_sampling_array(sorted_nested_replicate_values)
     #print(arr_for_sampling)
@@ -526,9 +589,9 @@ def calcuate_auc_std_err(sorted_concentrations, sorted_nested_replicate_values, 
                 use_sorted_concentrations = [sorted_concentrations[j] for j in range(len(sorted_concentrations)) if keep_mask[j]]
             #print(mean_dose_response_values)
             #print(sorted_concentrations)
-            interpolated_dose_response_values = interpolate_for_ref_concentrations(mean_dose_response_values, use_sorted_concentrations, sorted_ref_concentrations=[0.01, 0.1, 1.], initial_value=1., do_clip=True)
+            interpolated_dose_response_values = interpolate_for_ref_concentrations(mean_dose_response_values, use_sorted_concentrations, sorted_ref_concentrations=ref_concentrations, initial_value=1., do_clip=True)
             #print('Working with interpolated values {}'.format(interpolated_dose_response_values))
-            score = calc_auc(interpolated_dose_response_values, ref_concentrations=[0.01, 0.1, 1.])
+            score = calc_auc(interpolated_dose_response_values, ref_concentrations=ref_concentrations)
             aucs.append(score)
     return np.std(aucs)
 

@@ -3,6 +3,8 @@ from os import listdir
 import datetime
 from random import sample
 
+from threading import Thread
+
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -18,221 +20,123 @@ from .misc import well_string_to_nums
 from .drug_scoring.drug_scoring import round_conc, simplify_drug_names, reformat_concentrations, interpolate_for_ref_concentrations, calcuate_auc_std_err
 from .drug_scoring.drug_scoring import drug_sigmoid, fit_sigmoid, calc_auc, make_ic50_dict, order_single_compound_list, filter_by_fit_error
 from .drug_scoring.plotting import plot_curves
-from .qc.qc_functions import filter_implausible_cellnumbers, filter_bad_replicates, filter_by_min_n_wells
+from .qc.qc_functions import filter_implausible_cellnumbers, filter_bad_replicates, filter_by_min_n_wells, cap_population_numbers
+from .db_df_processing.df_functions import full_table_to_well_viability_table
 
 DEBUG = False
 
 
-class InhibitionReport:
+def prepare_reference_concentrations(all_concentrations, strategy, labels=None, verbose=False):
+    """
+    Prepare the reference concentrations, ie the concentrations that all data will be mapped to to make AUC values comparable
 
-    def __init__(self, whole_table, verbose=False, adjust_combination_concentrations=True, min_wells_per_drug_to_consider=3):
+    Parameters
+    ----------
+    all_concentrations : array_like
+                        array of all concentrations in the data, can be None if strategy is a list of floats
+                    
+    strategy : str or list
+                string: 'auto' or 'all'
+                'all' will use all concentrations in the data
+                'auto' will use the most common concentrations
+
+                list: list of floats that are the reference concentrations
+
+    labels : array_like
+            array of labels for the concentrations. Needs to be set if strategy is 'auto'.
+            These usually correspond to drugs or treatments and need to be set to for inference of the most common concentrations across treatments.
+    Returns
+    -------
+    ref_concentrations : list
+                        list of reference concentrations
+    """
+    valid_strategies = ['auto', 'all']
+    if isinstance(strategy, list):
+        if np.sum([isinstance(f, float) for f in strategy]) == len(strategy):
+            return strategy
+        else:
+            print('Strategy is not a list of floats')
+            return None
+    elif isinstance(strategy, str):
+        if not strategy in valid_strategies:
+            print('Invalid strategy {} provided. Valid strategies are {} Returning None'.format(strategy, valid_strategies))
+            return None
+        if strategy == 'all':
+            return list(np.unique(all_concentrations))
+        elif strategy == 'auto':
+            if labels is None:
+                print('Need to set labels if strategy is auto. Returning None.')
+                return None
+            conc_tuples = []
+            unique_labels = np.unique(labels)
+            for lbl in unique_labels:
+                unique_concs_tuple = tuple(np.unique(all_concentrations[labels == lbl]))
+                #hashes_for_labels.append(hash(unique_concs_tuple))
+                conc_tuples.append(unique_concs_tuple)
+            #unique_hashes, hash_counts = np.unique(hashes_for_labels, return_counts=True)
+            unique_concentrations = list(set(conc_tuples))
+            concentration_counts = [conc_tuples.count(f) for f in unique_concentrations]
+            sort_indices = np.argsort(concentration_counts)[::-1]
+            use_concs = list(unique_concentrations[sort_indices[0]])
+            #most_common_hash = unique_hashes[np.argmax(hash_counts)]
+            #use_concs = all_concentrations[labels == labels[hashes_for_labels.index(most_common_hash)]]
+            if verbose:
+                print(f'Most common concentrations: {list(np.unique(use_concs))}')
+            return list(np.unique(use_concs))
+            
+
+
+class LDTable_InhibitionReport:
+
+    def __init__(self, whole_table, verbose=False, run_initial_qc=True, min_wells_per_drug_to_consider=3,\
+                  reference_concentrations='auto', adjust_combination_concentrations=False, viable_cellnumber_column='NumberOfCells', initial_capping=True):
+        """
+        Class to generate inhibition reports from dataframes that have columns to denote cellnumbers, drugs, and concentrations
+
+        Parameters
+        ----------
+        whole_table : pandas.DataFrame
+                    DataFrame with cellnumber data. Needs to have columns 'Drug', 'Concentration', 'Metadata_Well', 'Plate', 'NumberOfCells' 
+
+        verbose : bool
+                Verbosity level
+
+        run_initial_qc : bool
+                Whether to run some minimal initial QC steps. Default is True
+
+        min_wells_per_drug_to_consider : int
+                Minimum number of wells per drug to consider. Default is 3. Drugs with fewer wells will be excluded
+                
+        reference_concentrations : str or list
+                Strategy to determine reference concentrations. Can be a list of concentrations to map to, 'auto' or 'all'.
+                'auto' will use the most common concentrations across treatments.
+                'all' will use all concentrations.
+                Default is 'auto'
+        
+        """
         ### calculate inhibitions for all drugs
+        if run_initial_qc:
+            whole_table = filter_implausible_cellnumbers(whole_table)
+            whole_table = filter_bad_replicates(whole_table, target_columns=viable_cellnumber_column, verbose=True)
+        ### calculate inhibitions for all drugs
+        self.verbose = verbose
         self.table = simplify_drug_names(whole_table)
         if not (min_wells_per_drug_to_consider is None):
             self.table = filter_by_min_n_wells(self.table, 'Drug', min_wells_per_drug_to_consider)
         self.table = reformat_concentrations(self.table, adjust_for_combos=adjust_combination_concentrations)
+        self.reference_concentrations = prepare_reference_concentrations(self.table['Concentration'].values, reference_concentrations, labels=self.table['Drug'].values, verbose=self.verbose)
         self.plates = list(set(self.table['Plate'].values))
         self.compounds = [f for f in list(set(self.table['Drug'].values)) if (f != 'DMSO') and (f != 'None')]
+        if initial_capping:
+            self.table = cap_population_numbers(self.table, [f for f in self.table.columns if ('NumberOfCells' in f)], subsetting_column='Plate')
         self.compounds.sort()
-        self.viable = 'Viable'
         self.drug_to_plate = dict()
-        self.verbose = verbose
         self.min_wells_per_drug_to_consider = min_wells_per_drug_to_consider
         for drug in self.compounds:
             plate = self.table[self.table['Drug'] == drug]['Plate'].values[0]
             self.drug_to_plate[drug] = plate
         self.reset_calculation_flags()
-
-
-    def reset_calculation_flags(self):
-        self.calculated_abs_target = False
-        self.calculated_pharmacoscopy_singles = False
-        self.calculated_pharmacoscopy_aucs = False
-        self.calculated_rbf_abs = False
-        return
-
-    def make_wells_plate_tuples(self, in_table):
-        all_plates = in_table['Plate'].values
-        all_wells = in_table['Metadata_Well'].values
-        wells_plates = []
-        for well, plate in list(zip(all_wells, all_plates)):
-            if (not (well, plate) in wells_plates):
-                wells_plates.append((well, plate))
-        wells_plates.sort()
-        return wells_plates
-
-        
-    def calculate_control_fractions(self, target_column, target_plate=None, offtarget=False):
-        if target_plate is None:
-            plates = self.plates
-        else:
-            plates = [target_plate]
-        control_fractions = []
-        for plate in plates:
-            plate_table = self.table[self.table['Plate'] == plate]
-            control_wells = list(set(plate_table[(plate_table['Drug'] == 'DMSO') | (plate_table['Drug'] == 'None')]['Metadata_Well'].values))
-            for well in control_wells:
-                control_fraction = self.calculate_fraction(target_column, plate_table, well, plate, offtarget=offtarget)
-                control_fractions.append(control_fraction)
-        return control_fractions
-    
-    
-    
-    def calculate_fraction(self, target_column, part_table, target_well, target_plate, offtarget=False):
-        subtable = part_table[(part_table['Metadata_Well'] == target_well) & (part_table['Plate'] == target_plate)]
-        num_cells = np.sum(subtable[self.viable].values)
-        if num_cells == 0:
-            return 0
-        if not offtarget:
-            num_pos = np.sum(subtable[subtable[self.viable].values.astype(bool)][target_column].values)
-        else:
-            vec = subtable[self.viable].to_numpy().astype(bool) & ~subtable[target_column].to_numpy().astype(bool)
-            num_pos = np.sum(vec.astype(np.int32))
-        return num_pos / num_cells
-        
-    def calculate_dose_responses(self, target_column):
-        self.dose_response_dict = dict()
-        ref_values = self.calculate_control_fractions(target_column)
-        all_fractions = []
-        for drug in self.compounds:
-            drug_table = self.table[self.table['Drug'] == drug]
-            concentrations = list(set(drug_table['Concentration'].values))
-            processed_concentrations, ref_concentrations = self.process_concentrations(concentrations)
-            conc_sort_indices = np.argsort(processed_concentrations)
-            inhibitions = []
-            use_concs = []
-            for i in range(len(processed_concentrations)):
-                conc = concentrations[conc_sort_indices[i]]
-                use_concs.append(conc)
-                concs = ref_concentrations[conc_sort_indices[i]]
-                conc_table = drug_table[drug_table['Concentration'].isin(concs)]
-                wells_plates = self.make_wells_plate_tuples(conc_table)
-                fractions = []
-                for well, plate in wells_plates:
-                    frac = self.calculate_fraction(target_column, conc_table, well, plate)
-                    fractions.append(frac)
-                mean_fraction = np.mean(fractions)
-                all_fractions.append(mean_fraction)
-                score = self.inhibition_score(mean_fraction, ref_values)
-                inhibitions.append(score)
-            #processed_concentrations.sort()
-            self.dose_response_dict[drug] = (use_concs, inhibitions)
-        return
-
-    def make_response_dict_abs(self, target_column, norm_to_plate=True):
-        """
-        Generate dictionary that stores the dose response data for each drug
-        Each drug is a key in the dictionary, the values are tuples of the form: (concentrations, cellnumbers, cellnumbers_std_devs, replicate_values)
-        concetrations are unique concentrations as floats
-        cellnumbers are averages per concentration
-        cellnumbers_std_devs are the standard deviations of the cellnumbers per concentration
-        replicate_values is a nested list of cellnumbers per well in the same order as the concentrations
-        """
-        self.abs_dose_response_dict = dict()
-        if norm_to_plate:
-            c_dict = self.control_plate_dict(target_column=target_column)
-        else:
-            control_number = self.num_cells_control()
-        for compound in self.compounds:
-            drug_table = self.table[(self.table['Drug'] == compound)]
-            concentrations = np.unique(drug_table['Concentration'].to_numpy())
-            if norm_to_plate:
-                plate = drug_table['Plate'].values[0]
-                control_number = c_dict[plate]
-            ### prev
-            #processed_concentrations, ref_concentrations = self.process_concentrations(concentrations)
-            #if DEBUG and (len(processed_concentrations) >= 4):
-            #    print('Strange concentrations for drug {}!!!!'.format(compound))
-            #    print('Orig')
-            #    print(concentrations)
-            #    print('Processed')
-            #    print(processed_concentrations)
-            #conc_sort_indices = np.argsort(processed_concentrations)
-            #concentrations.sort()
-            cellnumbers = []
-            cellnumbers_std = []
-            replicate_values = []
-            use_concs = []
-            ## prev
-            #for i in range(len(processed_concentrations)):
-            ## new
-            for i, conc in enumerate(concentrations):
-                ### prev
-                #conc = processed_concentrations[conc_sort_indices[i]]
-                #concs_here = ref_concentrations[conc_sort_indices[i]]
-                #conc_sub_table = drug_table[drug_table['Concentration'].isin(concs_here)]
-                ## new
-                conc_sub_table = drug_table[drug_table['Concentration'] == conc]
-                wells = list(set(conc_sub_table['Metadata_Well'].values))
-                cellnumbers_per_conc = []
-                for well in wells:
-                    well_table = conc_sub_table[(conc_sub_table['Metadata_Well'] == well)]
-                    num_targets_here = self.get_num_targets(well_table, target_column)
-                    #print('Found {} viable cells for target {},  drug {} at conc {} in well {}'.format(num_targets_here, target_column, compound, conc, well))
-                    num_cells_normed = num_targets_here / control_number
-                    cellnumbers_per_conc.append(num_cells_normed)
-                cellnumbers.append(np.mean(cellnumbers_per_conc))
-                cellnumbers_std.append(np.std(cellnumbers_per_conc))
-                replicate_values.append(cellnumbers_per_conc)
-                use_concs.append(conc)
-                ### prev
-                #concentrations = use_concs
-                #concentrations.sort()
-                self.abs_dose_response_dict[compound] = concentrations, cellnumbers, cellnumbers_std, replicate_values
-        return self.abs_dose_response_dict.copy()
-
-    def get_num_targets(self, well_table, target_column):
-        num_targets_here = np.sum(well_table[(well_table[target_column].values.astype(bool))][self.viable].values)
-        return num_targets_here
-
-    def abs_avg_score(self, input_dictionary):
-        scores = []
-        self.abs_auc_dict = dict()
-        for compound in self.compounds:
-            #concs, cellnumbers, _ = input_dictionary[compound]
-            vals = input_dictionary[compound]
-            concs = vals[0]
-            cellnumbers = vals[1]
-            inhibitions = 1- np.array(cellnumbers)
-            score = np.nanmean(inhibitions)
-            scores.append(score)
-            self.abs_auc_dict[compound] = score
-        return self.abs_auc_dict.copy()
-
-    def num_cells_control_plate(self, target_plate, target_column=None, offtarget=False):
-        cell_numbers = []
-        plate_table = self.table[self.table['Plate'] == target_plate]
-        control_wells = list(set(plate_table[(plate_table['Drug'] == 'DMSO')]['Metadata_Well'].values))
-        for well in control_wells:
-            if target_column is None:
-                subtable = plate_table[plate_table['Metadata_Well'] == well]
-            elif (not (target_column is None)) and not offtarget:
-                subtable = plate_table[(plate_table['Metadata_Well'] == well) & (plate_table[target_column].values.astype(bool))]
-            else:
-                subtable = plate_table[(plate_table['Metadata_Well'] == well) & (~plate_table[target_column].values.astype(bool))]
-            num_cells = np.sum(subtable[self.viable].values)
-            cell_numbers.append(num_cells)
-        return cell_numbers
-
-    def num_cells_control(self, normto1=False, return_std=False, target_column=None, target_plate=None, offtarget=False):
-        ## normto1 to additiionally normalize cell number to 1
-        cell_numbers = []
-        if target_plate is None:
-            plates = self.plates
-        else:
-            plates = [target_plate]
-        for plate in plates:
-            plate_numbers = self.num_cells_control_plate(plate, target_column=target_column, offtarget=offtarget)
-            cell_numbers += plate_numbers
-            if self.verbose:
-                print('Got cellnumbers for plate {} Mean is: {} Std. is {} min is {} max is {}'.format(plate, np.mean(plate_numbers), np.std(plate_numbers), np.amin(plate_numbers), np.amax(plate_numbers)))        
-        if normto1:
-            norm_cell_numbers = np.array(cell_numbers) / np.mean(cell_numbers)
-            norm_std_dev = np.nanstd(norm_cell_numbers)
-            return np.nanmean(norm_cell_numbers), norm_std_dev
-        if return_std:
-            return np.nanmean(cell_numbers), np.std(cell_numbers)
-        return np.nanmean(cell_numbers)
+        self.viable_cellnumber_column = viable_cellnumber_column
 
     def control_plate_dict(self, target_column=None, normto1=False, return_limits=False, return_std=False, offtarget=False):
         out_dict = dict()
@@ -243,6 +147,7 @@ class InhibitionReport:
                 mean_num, std_num = self.num_cells_control(target_column=target_column, normto1=normto1, return_std=return_std, target_plate=plate, offtarget=offtarget)
             else:
                 mean_num = self.num_cells_control(target_column=target_column, normto1=normto1, return_std=return_std, target_plate=plate, offtarget=offtarget)
+                std_num = None
             if return_limits:
                 upper = mean_num + std_num
                 lower = mean_num - std_num
@@ -302,6 +207,49 @@ class InhibitionReport:
             out_conc_list, ref_conc_list = zip(*zipped)
         return out_conc_list, ref_conc_list
 
+    def num_cells_control(self, normto1=False, return_std=False, target_column=None, target_plate=None, offtarget=False):
+        ## normto1 to additiionally normalize cell number to 1
+        cell_numbers = []
+        if target_plate is None:
+            plates = self.plates
+        else:
+            plates = [target_plate]
+        for plate in plates:
+            plate_numbers = self.num_cells_control_plate(plate, target_column=target_column, offtarget=offtarget)
+            cell_numbers += plate_numbers
+            if self.verbose:
+                print('Got cellnumbers for plate {} Mean is: {} Std. is {} min is {} max is {}'.format(plate, np.mean(plate_numbers), np.std(plate_numbers), np.amin(plate_numbers), np.amax(plate_numbers)))        
+        if normto1:
+            norm_cell_numbers = np.array(cell_numbers) / np.mean(cell_numbers)
+            norm_std_dev = np.nanstd(norm_cell_numbers)
+            return np.nanmean(norm_cell_numbers), norm_std_dev
+        if return_std:
+            return np.nanmean(cell_numbers), np.std(cell_numbers)
+        return np.nanmean(cell_numbers)
+
+
+    def abs_avg_score(self, input_dictionary):
+        scores = []
+        self.abs_auc_dict = dict()
+        for compound in self.compounds:
+            #concs, cellnumbers, _ = input_dictionary[compound]
+            vals = input_dictionary[compound]
+            concs = vals[0]
+            cellnumbers = vals[1]
+            inhibitions = 1- np.array(cellnumbers)
+            score = np.nanmean(inhibitions)
+            scores.append(score)
+            self.abs_auc_dict[compound] = score
+        return self.abs_auc_dict.copy()
+
+    def reset_calculation_flags(self):
+        self.calculated_abs_target = False
+        self.calculated_pharmacoscopy_singles = False
+        self.calculated_pharmacoscopy_aucs = False
+        self.calculated_rbf_abs = False
+        return
+    
+    
 
     def calculate_pharmacoscopy_scores(self, target_column, return_dictionaries=False, norm_to_plate=True):
         ## all these dictionaries have to be used for the final scoring and report generation
@@ -340,14 +288,13 @@ class InhibitionReport:
             processed_concentrations, ref_concentrations = self.process_concentrations(concentrations_per_drug_in)
             if (len(processed_concentrations) >= 4):
                 if self.verbose:
-                    print('Strange cocncentrations for drug {}!!!!'.format(drug))
+                    print('Strange concentrations for drug {}!!!!'.format(drug))
                     print('Orig')
                     print(concentrations_per_drug_in)
                     print('Processed')
                     print(processed_concentrations)
             conc_sort_indices = np.argsort(processed_concentrations)
             concentrations_per_drug_out = []
-            inhibitions_per_drug = []
             intermediate_scores_local = []
             cell_numbers_concentrations = []
             ## cell numbers normalized for pharmacoscopy plots
@@ -372,6 +319,11 @@ class InhibitionReport:
                 ref_values = plate_ref_value_dict[drugplate]
                 _, cellnum_std_norm1 = cell_num_norm_plate_dict[drugplate]
                 offtarget_ref_values = plate_offtarget_frac_dict[drugplate]
+            else:
+                num_cells_control, cellnum_std = self.num_cells_control(return_std=True)
+                ref_values = self.calculate_control_fractions(target_column)
+                cellnum_std_norm1 = cellnum_std / num_cells_control
+                offtarget_ref_values = self.calculate_control_fractions(target_column, offtarget=True)
             for i in range(len(processed_concentrations)):
                 concs = ref_concentrations[conc_sort_indices[i]]
                 p_conc = processed_concentrations[conc_sort_indices[i]]
@@ -388,13 +340,7 @@ class InhibitionReport:
                         frac = self.calculate_fraction(target_column, conc_table, well, plate)
                         fractions.append(frac)
                         offtarget_fractions.append(self.calculate_fraction(target_column, conc_table, well, plate, offtarget=True))
-                        if self.viable == 'NumberOfCells':
-                            local_well_cellnumber = np.sum(well_table[self.viable].values) - np.sum(well_table['NumberOfCells_{}'.format(target_column)].values)
-                        else:    
-                            viable_vec = well_table[self.viable].to_numpy().astype(bool)
-                            target_vec = well_table[target_column].to_numpy().astype(bool)
-                            local_well_cellnumber = np.sum(well_table[self.viable].values) - np.sum((viable_vec & target_vec).astype(np.int32))
-                        #local_well_cellnumber = np.sum(well_table[self.viable].values)
+                        local_well_cellnumber = np.sum(well_table[self.viable_cellnumber_column].values) - np.sum(well_table['NumberOfCells_{}'.format(target_column)].values)
                         cell_numbers_wells.append(local_well_cellnumber)
                         normalized_cell_numbers_per_conc.append(float(local_well_cellnumber) / num_cells_control)
                     if np.std(normalized_cell_numbers_per_conc) <= 2*(cellnum_std_norm1):
@@ -462,11 +408,6 @@ class InhibitionReport:
             return self.dose_response_dict.copy(), self.dose_fraction_dict.copy(), self.rbf_dict.copy()
         else:
             return
-
-    def add_off_target_column(self, target_column):
-        off_target_values = ~self.table[target_column].to_numpy().astype(bool)
-        self.table = self.table.assign(OffTarget=off_target_values)
-        return
         
     def calculate_z_score_aucs(self, target_column):
         z_scores = dict()
@@ -481,30 +422,6 @@ class InhibitionReport:
             z_scores[drug] = score
         return z_scores
 
-    def make_hit_bools(self, target_column, threshold=0.05):
-        num_drugs = len(self.compounds)
-        plate_list_dict = dict()
-        for plate in self.plates:
-            control_fractions = self.calculate_control_fractions(target_column, target_plate=plate)
-            control_scores = 1. - (np.array(control_fractions) / np.mean(control_fractions))
-            plate_list_dict[plate] = control_fractions
-        p_value_list = []
-        num_compounds_tested = 0
-        for drug in self.compounds:
-            plate_for_drug = self.table[self.table['Drug'] == drug]['Plate'].values[0]
-            concentrations, scores = self.dose_response_dict[drug]
-            mean_score = np.nanmean(scores)
-            if mean_score > 0.: ### differentiate here, between hits and non-hits because we are only interestesd in hits
-                test_statistic, p_value = ttest_1samp(control_scores, np.nanmean(scores))
-                p_value_list.append(p_value)
-                num_compounds_tested += 1
-            else:
-                p_value_list.append(-1.)
-        p_value_arr = np.array(p_value_list)
-        out_bool = (p_value_arr > 0.) & ((p_value_arr * num_compounds_tested) <= threshold)
-        return out_bool
-
-    
     def calculate_pharmacoscopy_aucs(self, target_column, return_scores=False, sigmoid=True, return_all_data=False):
         #self.calculate_pharmacoscopy_scores(target_column)
         self.pharmacoscopy_aucs = dict()
@@ -541,7 +458,7 @@ class InhibitionReport:
         else:
             return
     
-    def sigmoid_aucs_rbf(self, target_column, return_scores=False):
+    def sigmoid_aucs_rbf(self, target_column, return_scores=False, threaded=True):
         #self.calculate_pharmacoscopy_scores(target_column)
         self.calculated_pharmacoscopy_aucs = False
         self.calculated_abs_target = False
@@ -550,66 +467,85 @@ class InhibitionReport:
         self.rbf_score_sq_err = dict()
         self.abs_err_dict = dict()
         drug_index = 0
+        threads = []
         for drug in self.compounds:
             if DEBUG:
                 print('#{} Fitting sigmoid for '.format(drug_index+1) + drug)
             target_plate = self.drug_to_plate[drug]
-            if target_column is None:
-                rbf_control_numbers = self.num_cells_control_plate(target_plate, target_column=target_column)
+            if threaded:
+                t = Thread(target=self.score_and_add_to_dicts, args=(self.rbf_dict, drug, target_column, True))
+                threads.append(t)
+                t.start()
             else:
-                rbf_control_numbers = self.calculate_control_fractions(target_column, target_plate=target_plate)
-            #rbf_ref_values = list(np.array(rbf_control_numbers) / np.mean(rbf_control_numbers))
-            rbf_ref_values = [1.]*3
-            concentrations, rbfs, _, all_rbfs_sorted = self.rbf_dict[drug]
-            concentrations.sort()
-            score, opt, sq_err, abs_err = self.score_drug_sigmoid(concentrations, all_rbfs_sorted, rbf_ref_values, score_certainty=True, score_certainty_abs=True, allow_negative_values=True)
-            self.curve_params[drug] = opt
-            self.pharmacoscopy_aucs[drug] = score
-            self.rbf_score_sq_err[drug] = sq_err
-            self.abs_err_dict[drug] = abs_err
-            drug_index += 1
-            if DEBUG:
-                print('Finished fitting sigmoid. Score is {}'.format(score))
-            self.pharmacoscopy_aucs[drug] = score
+                self.score_and_add_to_dicts(self.rbf_dict, drug, target_column, do_rbf=True)
+        if threaded:
+            for t in threads:
+                t.join()
         self.calculated_rbf_abs = True
         if return_scores:
             return self.pharmacoscopy_aucs.copy()
         else:
             return
 
-    def sigmoid_aucs_abs(self, target_column, input_dictionary):
+    def score_and_add_to_dicts(self, input_dictionary, compound, target_column, do_rbf=False):
+        vals = input_dictionary[compound]
+        concentrations = vals[0]
+        cellnumbers = vals[1]
+        rep_cellnumbers = vals[3]
+
+
+        sort_indices = np.argsort(concentrations)
+        concentrations_for_scoring = [concentrations[index] for index in sort_indices]
+        rep_cellnumbers_for_scoring = [rep_cellnumbers[i] for i in sort_indices]
+
+
+        plate = self.drug_to_plate[compound]
+        ref_cell_numbers = self.num_cells_control_plate(plate, target_column=target_column)
+        if (np.mean(rep_cellnumbers[0]) <= 2) and (np.mean(ref_cell_numbers) >= 2): ## normalize ref cell numbers if rep was normalized
+            ref_cell_numbers = [f / np.mean(ref_cell_numbers) for f in ref_cell_numbers]
+        if do_rbf:
+            rbf_ref_values = [1.]*3
+            score, opt, sq_err, abs_err = self.score_drug_sigmoid(concentrations, rep_cellnumbers, rbf_ref_values, score_certainty=True, score_certainty_abs=True, allow_negative_values=True)
+            self.pharmacoscopy_aucs[compound] = score
+            self.rbf_score_sq_err[compound] = sq_err
+            if DEBUG:
+                print('Finished fitting sigmoid. Score is {}'.format(score))
+            self.pharmacoscopy_aucs[compound] = score
+        else:
+            score, opt, abs_err = self.score_drug_sigmoid(concentrations_for_scoring, rep_cellnumbers_for_scoring, ref_cell_numbers, score_certainty=True)
+            self.abs_auc_dict[compound] = score
+            self.abs_score_sq_err[compound] = abs_err
+        self.abs_err_dict[compound] = abs_err
+        self.curve_params[compound] = opt
+        return
+
+
+    def sigmoid_aucs_abs(self, target_column, input_dictionary, threaded=False):
         scores = []
         self.abs_auc_dict = dict()
         self.curve_params = dict()
         self.abs_score_sq_err = dict()
         self.abs_err_dict = dict()
+        if self.verbose:
+            print('Starting to score {} compounds. Threading is set to {}'.format(len(self.compounds), threaded))
         #self.calculated_pharmacoscopy_aucs = False
         self.calculated_rbf_abs = False
+        threads = []
         for compound in self.compounds:
+            if self.verbose:
+                print(f'Processing drug {compound}', flush=True)
             if compound in input_dictionary.keys():
-                vals = input_dictionary[compound]
-                concentrations = vals[0]
-                cellnumbers = vals[1]
-                rep_cellnumbers = vals[3]
-
-
-                sort_indices = np.argsort(concentrations)
-                concentrations_for_scoring = concentrations[list(sort_indices)]
-                rep_cellnumbers_for_scoring = [rep_cellnumbers[i] for i in sort_indices]
-
-
-                plate = self.drug_to_plate[compound]
-                ref_cell_numbers = self.num_cells_control_plate(plate, target_column=target_column)
-                if (np.mean(rep_cellnumbers[0]) <= 2) and (np.mean(ref_cell_numbers) >= 2): ## normalize ref cell numbers if rep was normalized
-                    ref_cell_numbers = [f / np.mean(ref_cell_numbers) for f in ref_cell_numbers]
-                score, opt, sq_err = self.score_drug_sigmoid(concentrations_for_scoring, rep_cellnumbers_for_scoring, ref_cell_numbers, score_certainty=True)
-                self.curve_params[compound] = opt
-                self.abs_auc_dict[compound] = score
-                self.abs_score_sq_err[compound] = sq_err
-                self.abs_err_dict[compound] = sq_err
+                if threaded:
+                    t = Thread(target=self.score_and_add_to_dicts, args=(input_dictionary, compound, target_column))
+                    threads.append(t)
+                    t.start()
+                else:
+                    self.score_and_add_to_dicts(input_dictionary, compound, target_column)
+        if threaded:
+            for t in threads:
+                t.join()
         self.calculated_abs_target = True
         return self.abs_auc_dict.copy()
-
 
     
     def score_drug_sigmoid(self, sorted_concentrations, sorted_nested_replicate_values, reference_values, score_certainty=False, score_certainty_abs=False, allow_negative_values=False):
@@ -647,9 +583,9 @@ class InhibitionReport:
             ## calculate score based on mean dose response values
             mean_dose_response_values = [np.nanmean(f) for f in sorted_nested_replicate_values]
             #print('calcuating auc for drug with mean dose response values {} and concentrations {}'.format(mean_dose_response_values, sorted_concentrations))
-            interpolated_dose_response_values = interpolate_for_ref_concentrations(mean_dose_response_values, sorted_concentrations, sorted_ref_concentrations=[0.01, 0.1, 1.], initial_value=1., do_clip=not allow_negative_values)
+            interpolated_dose_response_values = interpolate_for_ref_concentrations(mean_dose_response_values, sorted_concentrations, sorted_ref_concentrations=self.reference_concentrations, initial_value=1., do_clip=not allow_negative_values)
             #print('Working with interpolated values {}'.format(interpolated_dose_response_values))
-            score = calc_auc(interpolated_dose_response_values, ref_concentrations=[0.01, 0.1, 1.])
+            score = calc_auc(interpolated_dose_response_values, ref_concentrations=self.reference_concentrations)
             if (score is None) or np.isnan(score):
                 print('Got score of None for dr values {}'.format(mean_dose_response_values))
             ## fit sigmoid to data and use the fit to calculate the error
@@ -708,34 +644,6 @@ class InhibitionReport:
         return
 
 
-    def z_prime_raw(self, target_column, pos_control_drugs=['Cytarabine+Daunorubicin'], pos_control_concentrations=[5.,]):
-        cellnum_dict = self.control_plate_dict(return_std=False, target_column=target_column)
-        target_cellnumbers = []
-        for drug in pos_control_drugs:
-            drug_table = self.table[self.table['Drug'] == drug]
-            if pos_control_concentrations is None:                
-                pos_control_concentrations = list(set(drug_table['Concentration'].values))
-            for conc in pos_control_concentrations:
-                conc_table = drug_table[drug_table['Concentration'] == conc]
-                wells = list(set(conc_table['Metadata_Well'].values))
-                local_target_cell_numbers = [np.sum(conc_table[(conc_table['Metadata_Well'] == well) & (conc_table[self.viable].values.astype(bool))][target_column]) for well in wells]
-                target_cellnumbers += local_target_cell_numbers
-        all_cellnumbers_ctrl = []
-        pos_control_table = self.table[(self.table['Drug'].isin(pos_control_drugs)) & (self.table['Concentration'].isin(pos_control_concentrations))]
-        if DEBUG:
-            print('Positive control table has shape {}'.format(pos_control_table.shape))
-        pos_control_plates = list(set(pos_control_table['Plate'].values))
-        for plate in pos_control_plates:
-            all_cellnumbers_ctrl += self.num_cells_control_plate(plate, target_column=target_column)
-        mean_ctrl = np.nanmean(all_cellnumbers_ctrl)
-        std_ctrl = np.nanstd(all_cellnumbers_ctrl)
-        mean_pos = np.nanmean(target_cellnumbers)
-        std_pos = np.nanstd(target_cellnumbers)
-        if DEBUG:
-            print('Calculating Z-prime factor for the following values: Plates: {} positive ctrl-mean {}, positive ctrl-std: {}, ctrl-mean:{}, ctrl-std:{}'.format(pos_control_plates, round(mean_pos, 3), round(std_pos, 3), round(mean_ctrl, 3), round(std_ctrl, 3)))
-        z_prime = 1. - ((3*(std_ctrl+std_pos)) / np.abs(mean_ctrl - mean_pos) )
-
-        return z_prime
                 
     def sort_drug_dict(self, drug_dict, is_single_val=True, bottom_clip_value=None):
         all_drugs = []
@@ -920,6 +828,8 @@ class InhibitionReport:
                     conc_arr = np.array(concs_for_sig)# / np.nanmax(concs_for_sig)
                     #sig_curve = self.drug_sigmoid(conc_arr, params[0], params[1], params[2])
                     sig_curve = drug_sigmoid(conc_arr, params[0], params[1], params[2])
+            else:
+                sig_curve = None
             in_ax.bar(indices, heights, yerr=yerrs, color=colors, alpha=0.5)
             in_ax.plot(indices, [norm_cell_num_all]*len(indices), color='lightgrey')
             #in_ax.plot(indices, [upper_line_all]*len(indices), color='lightgrey')
@@ -1043,7 +953,7 @@ class InhibitionReport:
         
         print('Creating pharmacoscopy-style plot for {} drugs and {} scores'.format(len(sorted_drugs), len(sorted_scores)))
         #fig = plt.figure(figsize=(28, 14))
-        fig = plt.figure(figsize=(30, 16))
+        fig = plt.figure(figsize=(30, 16), constrained_layout=True)
         gs = fig.add_gridspec(5,6)
         #annotation_axis = fig.add_subplot(gs[:,0])
         #annotation_axis.text(0, 0, 'Experiment ID: 001 \n Readout: %CD34+CD117+ cells \n Sample type: bone marrow \n channels \n DAPI: DAPI \n CD34: APC \n CD117: PE \n CD3: FITC')
@@ -1103,7 +1013,7 @@ class InhibitionReport:
                                 sigmoid=sigmoid, use_dict=response_dict_target_cohort, comparator_dict=response_dict_comparator_cohort)
                     top_drug_index += 1
         #fig.suptitle(input_figtitle)
-        fig.tight_layout()
+        #fig.tight_layout()
         if savetitle is None:
             fig.show()
         else:
@@ -1246,7 +1156,7 @@ class InhibitionReport:
         ### plot all left, rest right
         _, plate_norm_all_dict, plate_norm_target_dict, _ = self.make_plate_dictionaries(target_column)
         auc_dict_target = self.calculate_abs_scores(target_column, norm_to_plate=norm_to_plate)
-        auc_dict_all = self.calculate_abs_scores(self.viable, norm_to_plate=norm_to_plate)
+        auc_dict_all = self.calculate_abs_scores(self.viable_cellnumber_column, norm_to_plate=norm_to_plate)
         use_dict_target = self.make_response_dict_abs(target_column).copy()
         use_dict_all = self.make_response_dict_abs('Viable').copy()
         norm_cell_num, norm_std = self.num_cells_control(return_std=True)
@@ -1268,22 +1178,121 @@ class InhibitionReport:
         else:
             fig.savefig(savename)
         return
-
-    def moa_control_sig_plot(self, annotation_path, pos_control):
-        ### calculate score distribution for each compound
+    
+    def make_wells_plate_tuples(self, in_table):
+        all_plates = in_table['Plate'].values
+        all_wells = in_table['Metadata_Well'].values
+        wells_plates = []
+        for well, plate in list(zip(all_wells, all_plates)):
+            if (not (well, plate) in wells_plates):
+                wells_plates.append((well, plate))
+        wells_plates.sort()
+        return wells_plates
+    
+    def calculate_dose_responses(self, target_column):
+        self.dose_response_dict = dict()
+        ref_values = self.calculate_control_fractions(target_column)
+        all_fractions = []
+        for drug in self.compounds:
+            drug_table = self.table[self.table['Drug'] == drug]
+            concentrations = list(set(drug_table['Concentration'].values))
+            processed_concentrations, ref_concentrations = self.process_concentrations(concentrations)
+            conc_sort_indices = np.argsort(processed_concentrations)
+            inhibitions = []
+            use_concs = []
+            for i in range(len(processed_concentrations)):
+                conc = concentrations[conc_sort_indices[i]]
+                use_concs.append(conc)
+                concs = ref_concentrations[conc_sort_indices[i]]
+                conc_table = drug_table[drug_table['Concentration'].isin(concs)]
+                wells_plates = self.make_wells_plate_tuples(conc_table)
+                fractions = []
+                for well, plate in wells_plates:
+                    frac = self.calculate_fraction(target_column, conc_table, well, plate)
+                    fractions.append(frac)
+                mean_fraction = np.mean(fractions)
+                all_fractions.append(mean_fraction)
+                score = self.inhibition_score(mean_fraction, ref_values)
+                inhibitions.append(score)
+            #processed_concentrations.sort()
+            self.dose_response_dict[drug] = (use_concs, inhibitions)
         return
-
-class LDTable_InhibitionReport(InhibitionReport):
-
-    def __init__(self, whole_table, verbose=False, run_initial_qc=True, min_wells_per_drug_to_consider=3):
-        ### calculate inhibitions for all drugs
-        if run_initial_qc:
-            whole_table = filter_implausible_cellnumbers(whole_table)
-            whole_table = filter_bad_replicates(whole_table, target_columns='NumberOfCells', verbose=True)
-        InhibitionReport.__init__(self, whole_table, verbose=verbose, min_wells_per_drug_to_consider=min_wells_per_drug_to_consider)
-        self.viable = 'NumberOfCells'
+    
+    def make_response_dict_abs(self, target_column, norm_to_plate=True):
+        """
+        Generate dictionary that stores the dose response data for each drug
+        Each drug is a key in the dictionary, the values are tuples of the form: (concentrations, cellnumbers, cellnumbers_std_devs, replicate_values)
+        concetrations are unique concentrations as floats
+        cellnumbers are averages per concentration
+        cellnumbers_std_devs are the standard deviations of the cellnumbers per concentration
+        replicate_values is a nested list of cellnumbers per well in the same order as the concentrations
+        """
+        self.abs_dose_response_dict = dict()
+        if norm_to_plate:
+            c_dict = self.control_plate_dict(target_column=target_column)
+            control_number = None # will be set in the loop
+        else:
+            control_number = self.num_cells_control()
+        for compound in self.compounds:
+            drug_table = self.table[(self.table['Drug'] == compound)]
+            concentrations = np.unique(drug_table['Concentration'].to_numpy())
+            if norm_to_plate:
+                plate = drug_table['Plate'].values[0]
+                control_number = c_dict[plate]
+            ### prev
+            #processed_concentrations, ref_concentrations = self.process_concentrations(concentrations)
+            
+            cellnumbers = []
+            cellnumbers_std = []
+            replicate_values = []
+            use_concs = []
+            ## prev
+            #for i in range(len(processed_concentrations)):
+            ## new
+            for i, conc in enumerate(concentrations):
+                ### prev
+                #conc = processed_concentrations[conc_sort_indices[i]]
+                #concs_here = ref_concentrations[conc_sort_indices[i]]
+                #conc_sub_table = drug_table[drug_table['Concentration'].isin(concs_here)]
+                ## new
+                conc_sub_table = drug_table[drug_table['Concentration'] == conc]
+                wells = list(set(conc_sub_table['Metadata_Well'].values))
+                cellnumbers_per_conc = []
+                for well in wells:
+                    well_table = conc_sub_table[(conc_sub_table['Metadata_Well'] == well)]
+                    num_targets_here = self.get_num_targets(well_table, target_column)
+                    #print('Found {} viable cells for target {},  drug {} at conc {} in well {}'.format(num_targets_here, target_column, compound, conc, well))
+                    num_cells_normed = num_targets_here / control_number
+                    cellnumbers_per_conc.append(num_cells_normed)
+                cellnumbers.append(np.mean(cellnumbers_per_conc))
+                cellnumbers_std.append(np.std(cellnumbers_per_conc))
+                replicate_values.append(cellnumbers_per_conc)
+                use_concs.append(conc)
+                ### prev
+                #concentrations = use_concs
+                #concentrations.sort()
+                self.abs_dose_response_dict[compound] = concentrations, cellnumbers, cellnumbers_std, replicate_values
+        return self.abs_dose_response_dict.copy()
         
     def calculate_control_fractions(self, target_column, target_plate=None, offtarget=False):
+        """
+        Calculate the fraction of cells with the name 'target_column' within the negative control wells
+
+        Parameters
+        ----------
+        target_column : str
+            Name of the column for which fractions should be calculated
+        target_plate : str or int
+            Plate for which fractions should be calculated. If None, all plates will be considered
+        offtarget : bool
+            Whether to calculate the fraction of off-target cells. Default is False
+
+        Returns
+        -------
+        control_fractions : list
+            List of control fractions for each well in the negative control
+        
+        """
         if target_plate is None:
             plates = self.plates
         else:
@@ -1314,7 +1323,7 @@ class LDTable_InhibitionReport(InhibitionReport):
             num_cells = subtable['NumberOfCells'].values[0]
             if num_cells == 0:
                 return 0
-            elif (target_column != 'Viable') and (target_column != self.viable):
+            elif (target_column != 'Viable') and (target_column != self.viable_cellnumber_column):
                 if not offtarget:
                     num_pos = subtable['NumberOfCells_{}'.format(target_column)].values[0]
                 else:
@@ -1324,23 +1333,53 @@ class LDTable_InhibitionReport(InhibitionReport):
             return float(num_pos) / num_cells
 
     def num_cells_control_plate(self, target_plate, target_column=None, offtarget=False):
-        cell_numbers = []
+        """
+        Calculate the number of cells in the control wells for a given plate
+
+        Parameters
+        ----------
+        target_plate : str or int
+            Plate for which the number of cells in the control wells should be calculated
+        target_column : str
+            Name of the column for which the number of cells should be calculated. If None, the number of viable cells will be calculated. Default is None
+        offtarget : bool
+            Whether to calculate the offtarget score, ie substract the target population from the total number of cells. Default is False
+        
+        Returns
+        -------
+        cell_numbers : list
+            List of cell numbers for each control well in the target plate
+        
+        """
         plate_table = self.table[self.table['Plate'] == target_plate]
-        #control_wells = list(set(plate_table[(plate_table['Drug'] == 'DMSO') | (plate_table['Drug'] == 'None')]['Metadata_Well'].values))
         control_wells = list(set(plate_table[(plate_table['Drug'] == 'DMSO')]['Metadata_Well'].values))
+        use_target_column = self.format_input_column(target_column, ref_table=plate_table)
+        if use_target_column == self.viable_cellnumber_column:
+            offtarget = False # no offtarget for viable cells
         if DEBUG:
             print('Calculating number of cells in control for target column {}'.format(target_column))
-        for well in control_wells:
-            subtable = plate_table[plate_table['Metadata_Well'] == well]
-            if (target_column is None) or (target_column == 'Viable') or (target_column == self.viable) or (target_column.strip() == 'NumberOfCells'):
-                num_cells = subtable['NumberOfCells'].values[0]
-            elif not offtarget:
-                num_cells = subtable['NumberOfCells_{}'.format(target_column)].values[0]
-            else:
-                num_cells = subtable['NumberOfCells'].values[0] - subtable['NumberOfCells_{}'.format(target_column)].values[0]
-            #np.sum(subtable[self.viable].values)
-            cell_numbers.append(num_cells)
-        return cell_numbers
+        viable_numbers = plate_table[plate_table['Metadata_Well'].isin(control_wells)][use_target_column].to_numpy()
+        if offtarget:
+            out_numbers = plate_table[plate_table['Metadata_Well'].isin(control_wells)][self.viable_cellnumber_column].to_numpy() - viable_numbers
+        else:
+            out_numbers = viable_numbers
+        return list(out_numbers)
+
+    def format_input_column(self, in_column, ref_table=None):
+        if ref_table is None:
+            ref_table = self.table
+         ### check whether columns are correct
+        if in_column in ref_table.columns:
+            out_column = in_column
+        elif (in_column is None) or (in_column == 'Viable') or (in_column == self.viable_cellnumber_column):
+            out_column = self.viable_cellnumber_column
+        elif (self.viable_cellnumber_column + '_' + in_column) in ref_table.columns:
+            out_column = self.viable_cellnumber_column + '_' + in_column
+        else:
+            print('Column {} not found in table, aborting'.format(in_column))
+            return
+        return out_column
+
 
     def get_num_targets(self, well_table, target_column):
         if (target_column is None) or (target_column == 'Viable') or (target_column.strip() == 'NumberOfCells'):
@@ -1383,6 +1422,38 @@ class LDTable_InhibitionReport(InhibitionReport):
 
         return z_prime
 
+
+
+class InhibitionReport(LDTable_InhibitionReport):
+
+    def __init__(self, whole_table, verbose=False, adjust_combination_concentrations=True, min_wells_per_drug_to_consider=3, reference_concentrations='auto'):
+        """
+        Class to generate inhibition reports from single-cell dataframes that have columns to denote viable cells, drugs, and concentrations
+
+        Parameters
+        ----------
+        whole_table : pandas.DataFrame
+                    DataFrame with single-cell data. Needs to have columns 'Drug', 'Concentration', 'Metadata_Well', 'Plate', 'Viable' 
+
+        verbose : bool
+                Verbosity level
+
+        adjust_combination_concentrations : bool
+                Adjust concentrations for combinations by checking if they are strings and whether they have been halved by accident. Default is True
+
+        min_wells_per_drug_to_consider : int
+                Minimum number of wells per drug to consider. Default is 3. Drugs with fewer wells will be excluded
+
+        reference_concentrations : str or list
+                Strategy to determine reference concentrations. Can be a list of concentrations to map to, 'auto' or 'all'.
+                'auto' will use the most common concentrations across treatments.
+                'all' will use all concentrations.
+                Default is 'auto'
+        
+        """
+        self.sc_table = whole_table
+        whole_table = full_table_to_well_viability_table(whole_table, [])
+        LDTable_InhibitionReport.__init__(self, whole_table, verbose=verbose, min_wells_per_drug_to_consider=min_wells_per_drug_to_consider, reference_concentrations=reference_concentrations)
 
 class ReportWriter:
 

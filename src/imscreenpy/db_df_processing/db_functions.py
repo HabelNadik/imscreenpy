@@ -392,6 +392,71 @@ def get_matched_feature_df_with_target_columns(id_df, target_columns, db_path_or
         return matched_new_df
     
 
+def get_image_df(conn_or_path, fluorophores_of_interest, cfg=None, other_qc_columns=['Image_Count_nuclei'], \
+                  intensity_column_prefix='Image_Intensity_MeanIntensity_', metadata_well_column='Image_Metadata_Well',\
+                    metadata_column_column='Image_Metadata_column',\
+                        metadata_field_column='Image_Metadata_field', metadata_row_column='Image_Metadata_row', db_im_table_name='Per_Image'):
+    """
+    Get a dataframe containing image-level data for the specified fluorophores of interest
+
+    Parameters
+    ----------
+    conn_or_path : str or sqlite3.Connection
+        Either a path to a sqlite database or a sqlite3.Connection object
+
+
+    fluorophores_of_interest : list of str
+        The fluorophores for which to extract data
+    
+    cfg : Config (optional)
+        An imscreenpy.config.Config object containing metadata columns and other information. If None, columns will be read
+        from function arguments
+
+    other_qc_columns : list of str (optional)
+        Other columns to include in the output dataframe
+    
+    intensity_column_prefix : str (optional)
+        The prefix of the intensity columns in the database
+    
+    metadata_well_column : str (optional)
+        The name of the well column in the database
+
+    metadata_column_column : str (optional)
+        The name of the column column in the database
+    
+    metadata_field_column : str (optional)
+        The name of the field column in the database
+
+    metadata_row_column : str (optional)
+        The name of the row column in the database
+
+    db_im_table_name : str (optional)
+        The name of the table in the database containing image data
+    
+    """
+
+    if isinstance(conn_or_path, str):
+        conn = sqlite3.connect(conn_or_path)
+    else:
+        conn = conn_or_path
+    
+    #intensity_columns = ['Image_Intensity_MeanIntensity_{}'.format(fluo) for fluo in fluorophores_of_interest]
+    intensity_columns = [intensity_column_prefix + '{}'.format(fluo) for fluo in fluorophores_of_interest]
+    if not (cfg is None):
+        metadata_columns = cfg.im_metadata_columns
+        im_table_name = cfg.db_im_table_name
+    else:
+        metadata_columns = [f for f in [metadata_column_column, metadata_field_column, metadata_row_column, metadata_well_column] if not (f is None)]
+        im_table_name = db_im_table_name
+    target_columns = intensity_columns + metadata_columns
+    if not other_qc_columns is None:
+        target_columns += other_qc_columns
+    query_string = make_query_string(target_columns, im_table_name)
+    df = pd.read_sql(query_string, conn)
+    if isinstance(conn_or_path, str):
+        conn.close()
+    return df
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Merge databases from CellProfiler into single big database')
     parser.add_argument('input_folder', help='path to images folder', type=str)

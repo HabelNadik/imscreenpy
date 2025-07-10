@@ -5,11 +5,11 @@ from timeit import default_timer as timer
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from skimage.filters import threshold_otsu, threshold_minimum
 
 from ..misc import well_string_to_nums, print_time
 from ..db_df_processing import db_functions
 from ..visualization import single_cell_vis as sc_vis
+from ..visualization.qc_plotting import image_qc_plot
 from ..db_df_processing.df_functions import split_dataframe
 from .qc_config import QCconfig
 from ..config import Config 
@@ -20,20 +20,38 @@ from ..drug_scoring.drug_scoring import reformat_concentrations
 ###############################################################
 
 
-def get_qc_image_df(conn, fluorophores_of_interest, cfg):
-    intensity_columns = ['Image_Intensity_MeanIntensity_{}'.format(fluo) for fluo in fluorophores_of_interest]
-    metadata_columns = ['Image_Metadata_Well', 'Image_Metadata_column', 'Image_Metadata_field', 'Image_Metadata_row']
-    other_qc_columns = ['Image_Count_nuclei']
-    target_columns = intensity_columns + metadata_columns + other_qc_columns
-    query_string = db_functions.make_query_string(target_columns, cfg.db_im_table_name)
-    df = pd.read_sql(query_string, conn)
-    return df
 
-def get_image_df_outlier_wells(df, fluorophores_of_interest, qc_plot_savename=None, plot_qc=True, be_relaxed=False, ignore_cellnumbers=False, ignore_fluos=[]):
-    intensity_columns = ['Image_Intensity_MeanIntensity_{}'.format(fluo) for fluo in fluorophores_of_interest]
-    metadata_columns = ['Image_Metadata_Well', 'Image_Metadata_column', 'Image_Metadata_field', 'Image_Metadata_row']
+def get_image_df_outlier_wells(df, fluorophores_of_interest, qc_plot_savename=None, plot_qc=True, be_relaxed=False, ignore_cellnumbers=False, ignore_fluos=[], intensity_column_prefix='Image_Intensity_MeanIntensity_', \
+                               metadata_well_column='Image_Metadata_Well', metadata_col_column='Image_Metadata_column', metadata_row_column='Image_Metadata_row', metadata_field_column='Image_Metadata_field'):
+    """
+    Get outlier wells based on image raw intensity data and nuclei counts and otpionable make a qc plot
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Dataframe containing image raw intensity data and nuclei counts
+    fluorophores_of_interest : list
+        List of fluorophores to consider for qc
+    qc_plot_savename : str, optional
+        Path to save the qc plot, by default None
+    plot_qc : bool, optional
+        Whether to plot the qc plot, by default True
+    be_relaxed : bool, optional
+        Whether to be relaxed in the outlier detection, ie using 4 standard deviations instead of 3, by default False
+    ignore_cellnumbers : bool, optional
+        Whether to ignore cellnumbers in the outlier detection, by default False
+    ignore_fluos : list, optional
+        List of fluorophores to ignore in the outlier detection, by default []. They will still be plotted if plotting is enabled
+    
+    Returns
+    -------
+    exclusion_df : pd.DataFrame
+        Dataframe containing the wells to exclude and the values that caused the exclusion
+    """
+    intensity_columns = ['{}{}'.format(intensity_column_prefix, fluo) for fluo in fluorophores_of_interest]
+    metadata_columns = [metadata_well_column, metadata_row_column, metadata_col_column, metadata_field_column]
     other_qc_columns = ['Image_Count_nuclei']
-    wells = list(set(df['Image_Metadata_Well'].values))
+    wells = list(set(df[metadata_well_column].values))
     plot_qc_columns = intensity_columns + other_qc_columns
     ignore_columns = []
     if ignore_cellnumbers:
@@ -45,18 +63,20 @@ def get_image_df_outlier_wells(df, fluorophores_of_interest, qc_plot_savename=No
     all_qc_columns = [f for f in plot_qc_columns if not (f in ignore_columns)]
     exclusion_matrix = np.zeros((16, 24))
     wells_to_exclude = []
-    matrices_to_show = []
+    df_well_exclusion_columns = []
+    df_well_exclusion_values = []
+    #matrices_to_show = []
     for qc_col in plot_qc_columns:
         values_to_check = []
-        matrix = np.zeros((16, 24))
+        #matrix = np.zeros((16, 24))
         for well in wells:
             if 'Count' in qc_col:
-                value = np.sum(df[df['Image_Metadata_Well'] == well][qc_col].to_numpy())
+                value = np.sum(df[df[metadata_well_column] == well][qc_col].to_numpy())
             else:
-                value = np.nanmean(df[df['Image_Metadata_Well'] == well][qc_col].to_numpy())
+                value = np.nanmean(df[df[metadata_well_column] == well][qc_col].to_numpy())
             values_to_check.append(value)
             row, col = well_string_to_nums(well)
-            matrix[row-1,col-1] = value
+            #matrix[row-1,col-1] = value
         if qc_col in all_qc_columns:
             med = np.median(values_to_check)
             std = np.std(values_to_check)
@@ -66,30 +86,28 @@ def get_image_df_outlier_wells(df, fluorophores_of_interest, qc_plot_savename=No
             else:
                 left = med - (3*std)
                 right = med + (3*std)
-            wells_to_exclude += [wells[i] for i in range(len(wells)) if (values_to_check[i] < left) or (values_to_check[i] > right)]
-        matrices_to_show.append(matrix)
+            exclude_wells_per_col = [wells[i] for i in range(len(wells)) if (values_to_check[i] < left) or (values_to_check[i] > right)]
+            wells_to_exclude += exclude_wells_per_col
+            if len(exclude_wells_per_col) > 0:
+                df_well_exclusion_columns += [qc_col for i in range(len(exclude_wells_per_col))]
+                df_well_exclusion_values += [values_to_check[i] for i in range(len(wells)) if (values_to_check[i] < left) or (values_to_check[i] > right)]
+        #matrices_to_show.append(matrix)
     for well in wells_to_exclude:
         row, col = well_string_to_nums(well)
         exclusion_matrix[row-1,col-1] = 1
     if plot_qc:
         ###### make plot
-        num_fig_rows = len(plot_qc_columns)+1
-        fig, ax = plt.subplots(nrows=num_fig_rows, figsize=(8,6*num_fig_rows))
-        for i in range(len(plot_qc_columns)):
-            sh = ax[i].imshow(matrices_to_show[i], cmap='coolwarm')
-            ax[i].set_title(plot_qc_columns[i])
-            plt.colorbar(sh, ax=ax[i])
-        ax[-1].imshow(exclusion_matrix)
-        if qc_plot_savename is None:
-            fig.show()
-        else:
-            fig.savefig(qc_plot_savename)
-    return wells_to_exclude
+        image_qc_plot([df], intensity_columns, qc_plot_savename,\
+                   platenames=None, other_qc_columns=None, well_column=metadata_well_column, \
+                   row_column=metadata_row_column, col_column=metadata_col_column, aggregation_strategy='median', plot_orientation='horizontal', exclusion_matrix_to_plot=exclusion_matrix)
+    exclusion_df = pd.DataFrame({metadata_well_column: wells_to_exclude, 'Column': df_well_exclusion_columns, 'Value': df_well_exclusion_values})
+    return exclusion_df
 
 def do_image_qc(conn, fluorophores_of_interest, qc_savename, cfg, plot_qc=True, be_relaxed=False, ignore_cellnumbers=False):
-    df = get_qc_image_df(conn, fluorophores_of_interest, cfg)
-    outlier_wells = get_image_df_outlier_wells(df, fluorophores_of_interest, qc_plot_savename=qc_savename, plot_qc=plot_qc, be_relaxed=be_relaxed, ignore_cellnumbers=ignore_cellnumbers)
-    return outlier_wells
+    df = db_functions.get_image_df(conn, fluorophores_of_interest, cfg)
+    outlier_well_df = get_image_df_outlier_wells(df, fluorophores_of_interest, qc_plot_savename=qc_savename, plot_qc=plot_qc,\
+                                                  be_relaxed=be_relaxed, ignore_cellnumbers=ignore_cellnumbers, metadata_well_column=cfg.im_well_cpc, ignore_fluos=cfg.get_im_qc_ignore_flurophores())
+    return outlier_well_df
 
 ######  END OF IMAGE RAW INTENSTIY BASED QC ###################
 ###############################################################
@@ -138,7 +156,7 @@ def make_morphology_qc_vector(input_df, qc_cfg):
 
 
 def do_morphology_qc(input_df, vis_folder, target_folder, well_exclusion_threshold=0.5,\
-                      show_cells=False, platename='', exclude_wells_morph=True, cfg=None, id_df_add_columns=None, split_dfs=True):
+                      show_cells=False, platename='', exclude_wells_morph=True, cfg=None, id_df_add_columns=None, split_dfs=True, well_column='Metadata_Well'):
     if cfg is None:
         cfg = QCconfig(None)
     elif not isinstance(cfg, QCconfig):
@@ -168,7 +186,7 @@ def do_morphology_qc(input_df, vis_folder, target_folder, well_exclusion_thresho
         sc_vis.visualize_cells_in_grid(~qc_vector, visualizer_here=vsr, max_grid_size=10, savename=join(target_folder, '{}_bad_cells.png'.format(platename)))
     if exclude_wells_morph:
         print('QC: Excluding wells by morphology qc fraction', flush=True)
-        qc_vector = exclude_poor_wells(input_df['Metadata_Well'].to_numpy(), qc_vector, well_exclusion_threshold=well_exclusion_threshold)
+        qc_vector = exclude_poor_wells(input_df[well_column].to_numpy(), qc_vector, well_exclusion_threshold=well_exclusion_threshold)
     else:
         print('QC: No well exclusion due to morphology', flush=True)
     if split_dfs:
@@ -186,16 +204,16 @@ def do_morphology_qc(input_df, vis_folder, target_folder, well_exclusion_thresho
         return out_df
 
 
-def plot_cell_feature_distributions(df, target_columns, qc_plot_savename=None, prefix=''):
+def plot_cell_feature_distributions(df, target_columns, qc_plot_savename=None, prefix='', well_column='Metadata_Well'):
     #### get median values and sums for each column of interest
     median_matrices_to_show = []
     sum_matrices_to_show = []
-    wells = list(set(df['Metadata_Well'].values))
+    wells = list(set(df[well_column].values))
     for qc_col in target_columns:
         median_matrix = np.zeros((16, 24))
         sum_matrix = np.zeros((16, 24))
         for well in wells:
-            well_values = df[df['Metadata_Well'] == well][qc_col].to_numpy()
+            well_values = df[df[well_column] == well][qc_col].to_numpy()
             sum_val = np.sum(well_values)
             median_val = np.median(well_values)
             row, col = well_string_to_nums(well)
@@ -207,7 +225,7 @@ def plot_cell_feature_distributions(df, target_columns, qc_plot_savename=None, p
     cellnum_matrix = np.zeros((16,24))
     #dapi_matrix = np.zeros((16,24))
     for well in wells:
-        well_df = df[df['Metadata_Well'] == well]
+        well_df = df[df[well_column] == well]
         row, col = well_string_to_nums(well)
         cellnum_matrix[row-1,col-1] = well_df.shape[0]
         #dapi_matrix[row-1,col-1] = np.sum(well_df['nuclei_Intensity_MeanIntensity_DNA'].to_numpy())
@@ -236,7 +254,7 @@ def plot_cell_feature_distributions(df, target_columns, qc_plot_savename=None, p
 ###############################################################
 ###############################################################
 
-def filter_implausible_cellnumbers(in_df, n_stds=2, subsetting_column=None, target_column='NumberOfCells', verbose=False):
+def filter_implausible_cellnumbers(in_df, n_stds=2, subsetting_column=None, well_column='Metadata_Well', target_column='NumberOfCells', verbose=False):
     dmso_mask = (in_df['Drug'] == 'DMSO').to_numpy()
     if subsetting_column is None:
         subsetting_column = 'Plate'
@@ -244,26 +262,26 @@ def filter_implausible_cellnumbers(in_df, n_stds=2, subsetting_column=None, targ
     keep_mask = np.zeros(in_df.shape[0]).astype(bool)
     for subset in subsets:
         subset_mask = (in_df[subsetting_column] == subset).to_numpy()
-        dmso_wells = np.unique(in_df[dmso_mask & subset_mask]['Metadata_Well'].to_numpy())
-        treated_wells = np.unique(in_df[~dmso_mask & subset_mask]['Metadata_Well'].to_numpy())
+        dmso_wells = np.unique(in_df[dmso_mask & subset_mask][well_column].to_numpy())
+        treated_wells = np.unique(in_df[~dmso_mask & subset_mask][well_column].to_numpy())
         n_treated_wells = treated_wells.shape[0]
         if isinstance(target_column, str):
-            dmso_cellnumbers = np.array([in_df[(in_df['Metadata_Well'] == well) & dmso_mask][target_column].values[0] for well in dmso_wells])
-            treated_cellnumbers = np.array([in_df[(in_df['Metadata_Well'] == well) & ~dmso_mask][target_column].values[0] for well in treated_wells])
+            dmso_cellnumbers = np.array([in_df[(in_df[well_column] == well) & dmso_mask][target_column].values[0] for well in dmso_wells])
+            treated_cellnumbers = np.array([in_df[(in_df[well_column] == well) & ~dmso_mask][target_column].values[0] for well in treated_wells])
             dmso_mean = np.mean(dmso_cellnumbers)
             dmso_std = np.std(dmso_cellnumbers)
             keep_wells_treated = [treated_wells[i] for i in range(n_treated_wells) if treated_cellnumbers[i] <= (dmso_mean + (n_stds * dmso_std))]
-            keep_wells_mask = (in_df['Metadata_Well'].isin(keep_wells_treated + list(dmso_wells))).to_numpy()
+            keep_wells_mask = (in_df[well_column].isin(keep_wells_treated + list(dmso_wells))).to_numpy()
             keep_mask = keep_mask | (subset_mask & keep_wells_mask)
         else:
             keep_wells_mask_all = np.ones(in_df.shape[0]).astype(bool)
             for t_col in target_column:
-                dmso_cellnumbers = np.array([in_df[(in_df['Metadata_Well'] == well) & dmso_mask][t_col].values[0] for well in dmso_wells])
-                treated_cellnumbers = np.array([in_df[(in_df['Metadata_Well'] == well) & ~dmso_mask][t_col].values[0] for well in treated_wells])
+                dmso_cellnumbers = np.array([in_df[(in_df[well_column] == well) & dmso_mask][t_col].values[0] for well in dmso_wells])
+                treated_cellnumbers = np.array([in_df[(in_df[well_column] == well) & ~dmso_mask][t_col].values[0] for well in treated_wells])
                 dmso_mean = np.mean(dmso_cellnumbers)
                 dmso_std = np.std(dmso_cellnumbers)
                 keep_wells_treated = [treated_wells[i] for i in range(n_treated_wells) if treated_cellnumbers[i] <= (dmso_mean + (n_stds * dmso_std))]
-                keep_wells_mask = (in_df['Metadata_Well'].isin(keep_wells_treated + list(dmso_wells))).to_numpy()
+                keep_wells_mask = (in_df[well_column].isin(keep_wells_treated + list(dmso_wells))).to_numpy()
                 keep_wells_mask_all = keep_wells_mask_all & keep_wells_mask
             keep_mask = keep_mask | (subset_mask & keep_wells_mask_all)
     if verbose:
@@ -283,7 +301,7 @@ def add_normalized_cellnumber_column(in_df, target_column, subsetting_column=Non
     return in_df.assign(**{target_column + '_normalized': normed_vals})
         
 
-def get_mad_filtered_wells(treatment_df, normalized_column, frac_diff=0.3, prev_frac_diff=0.3, prev_frac_diff_single=None):
+def get_mad_filtered_wells(treatment_df, normalized_column, well_column='Metadata_Well', frac_diff=0.3, prev_frac_diff=0.3, prev_frac_diff_single=None):
     """
     get wells were conc point i+1 is not more than prev_frac_diff higher than conc point i
     and where the median absolute deviation is not more than frac_diff
@@ -299,22 +317,22 @@ def get_mad_filtered_wells(treatment_df, normalized_column, frac_diff=0.3, prev_
         if  ((prev_frac_diff is None) or (median_val <= (prev_val + prev_frac_diff))) and (prev_frac_diff_single is None):
             median_abs_dev = np.median(np.abs(conc_df[normalized_column] - median_val))
             if (frac_diff is None) or (median_abs_dev <= frac_diff):
-                keep_wells += conc_df['Metadata_Well'].to_list()
+                keep_wells += conc_df[well_column].to_list()
                 prev_val = median_val
         elif not (prev_frac_diff_single is None):
             vals_above = conc_df[normalized_column].to_numpy() <= (prev_val + prev_frac_diff_single)
             median_abs_dev = np.median(np.abs(conc_df[normalized_column] - median_val))
             if np.sum(vals_above) == 1:
-                keep_wells += conc_df[vals_above]['Metadata_Well'].to_list()
+                keep_wells += conc_df[vals_above][well_column].to_list()
                 prev_val = np.mean(conc_df[vals_above][normalized_column].to_numpy())
             elif (np.sum(vals_above) > 1) and (frac_diff is None) or (median_abs_dev <= frac_diff):
-                keep_wells += conc_df[vals_above]['Metadata_Well'].to_list()
+                keep_wells += conc_df[vals_above][well_column].to_list()
                 prev_val = median_val            
     return keep_wells
 
 
 
-def filter_bad_replicates(in_df, frac_diff=0.3, prev_frac_diff=0.3, prev_frac_diff_single=None, subsetting_column=None, target_columns='NumberOfCells', verbose=True, min_n_replicates=1):
+def filter_bad_replicates(in_df, frac_diff=0.3, prev_frac_diff=0.3, prev_frac_diff_single=None, well_column='Metadata_Well', subsetting_column=None, target_columns='NumberOfCells', verbose=True, min_n_replicates=1):
     if in_df['Concentration'].to_numpy().dtype == np.object_:
         in_df = reformat_concentrations(in_df, adjust_for_combos=True)
     dmso_mask = (in_df['Drug'] == 'DMSO').to_numpy()
@@ -337,7 +355,7 @@ def filter_bad_replicates(in_df, frac_diff=0.3, prev_frac_diff=0.3, prev_frac_di
                 keep_wells_here = get_mad_filtered_wells(local_df[subset_mask & (local_df['Drug'] == treatment)], t_col + '_normalized', frac_diff=frac_diff, prev_frac_diff=prev_frac_diff, prev_frac_diff_single=prev_frac_diff_single)
                 if len(keep_wells_here) >= min_n_replicates:
                     keep_wells_per_subset += keep_wells_here
-            keep_mask[:,i] = keep_mask[:,i] | (local_df['Metadata_Well'].isin(keep_wells_per_subset).to_numpy() & subset_mask) | dmso_mask
+            keep_mask[:,i] = keep_mask[:,i] | (local_df[well_column].isin(keep_wells_per_subset).to_numpy() & subset_mask) | dmso_mask
             if verbose:
                 print('Got {} wells to keep for subset {}'.format(len(keep_wells_per_subset), subset))
                 print(np.sum(keep_mask[:,i]))
@@ -452,7 +470,7 @@ def cap_population_numbers(in_df, target_columns, subsetting_column=None, verbos
         print('Capping: Corrected {} of {} wells'.format(int(n_corrected_wells/len(target_columns)), in_df.shape[0]), flush=True)
     return in_df.assign(**ass_dict)
 
-def filter_bad_conditions(in_df, subsetting_column=None, target_column='NumberOfCells', mad_threshold=0.5, verbose=False):
+def filter_bad_conditions(in_df, subsetting_column=None, target_column='NumberOfCells', mad_threshold=0.5, well_column='Metadata_Well', verbose=False):
     dmso_mask = (in_df['Drug'] == 'DMSO').to_numpy()
     if subsetting_column is None:
         subsetting_column = 'Plate'
@@ -461,8 +479,8 @@ def filter_bad_conditions(in_df, subsetting_column=None, target_column='NumberOf
     n_conditions_kept = 0
     for subset in subsets:
         subset_mask = (in_df[subsetting_column] == subset).to_numpy()
-        dmso_wells = np.unique(in_df[dmso_mask & subset_mask]['Metadata_Well'].to_numpy())
-        dmso_cellnumbers = np.array([in_df[(in_df['Metadata_Well'] == well) & dmso_mask][target_column].values[0] for well in dmso_wells])
+        dmso_wells = np.unique(in_df[dmso_mask & subset_mask][well_column].to_numpy())
+        dmso_cellnumbers = np.array([in_df[(in_df[well_column] == well) & dmso_mask][target_column].values[0] for well in dmso_wells])
         norm_dmso_cellnumbers = dmso_cellnumbers / np.mean(dmso_cellnumbers)
         mad = np.median(np.abs(norm_dmso_cellnumbers - np.median(norm_dmso_cellnumbers)))
         if mad <= mad_threshold:
@@ -477,11 +495,11 @@ def filter_bad_conditions(in_df, subsetting_column=None, target_column='NumberOf
     return in_df[keep_mask]
 
 
-def filter_by_min_n_wells(in_table, target_column, min_n):
+def filter_by_min_n_wells(in_table, target_column, min_n, well_column='Metadata_Well'):
     unique_elems = in_table[target_column].unique()
     keep_elems = []
     for elem in unique_elems:
-        unique_wells = in_table[in_table[target_column] == elem]['Metadata_Well'].unique()
+        unique_wells = in_table[in_table[target_column] == elem][well_column].unique()
         if unique_wells.shape[0] >= min_n:
             keep_elems.append(elem)
     return in_table[in_table[target_column].isin(keep_elems)]
@@ -526,3 +544,4 @@ def scale_viability_table(in_df, target_columns, subsetting_column=None):
         else:
             ass_dict[t_col] = cellnumbers_per_col[:,i]
     return in_df.assign(**ass_dict)
+

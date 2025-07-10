@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imscreenpy"
+authors = [
+    {name = "Ben Haladik", email = "ben.haladik@ccri.at"}
+]
+maintainers = [
+    {name = "Ben Haladik", email = "ben.haladik@ccri.at"}
+]
+description = "imscreenpy is made to analyze image-based screening data and delineate responses in heterogeneous populations."
+readme = "README.md"
+requires-python = ">=3.8.0"
+dependencies = [
+    "numpy>=1.20.1", "pandas>=2.2.2", "pomegranate>=1.0.3", "matplotlib", "seaborn>=0.13.0", "scipy>=1.13.0", "scikit-learn>=1.3.2", "opencv-python"
+]
+version = "0.9.11"
+license = {file = "LICENSE"}
+keywords = ["screening", "drug response", "imaging", "morphological profiling", "drug screening"]
+
+
+classifiers = [
+  # How mature is this project? Common values are
+  #   3 - Alpha
+  #   4 - Beta
+  #   5 - Production/Stable
+  "Development Status :: 4 - Beta",
+
+  # Indicate who your project is intended for
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+
+  # Pick your license as you wish (see also "license" above)
+  "License :: OSI Approved :: MIT License",
+
+  # Specify the Python versions you support here.
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13"
+]
+
+[project.urls]
+Repository = "https://cemmgit.int.cemm.at/bhaladik/imaging_screens_postprocessing"
+Issues = "http://cemmgit.int.cemm.at/bhaladik/imaging_screens_postprocessing/-/issues"

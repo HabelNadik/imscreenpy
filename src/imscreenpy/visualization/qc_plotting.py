@@ -8,17 +8,19 @@ import numpy as np
 import sklearn
 import scipy
 from scipy import stats
+from skimage.filters import threshold_otsu, threshold_minimum
 import skimage
 from skimage.io import imread
 from skimage.util import img_as_float, img_as_ubyte
 from skimage.exposure import rescale_intensity, equalize_adapthist
 from skimage import exposure
 import matplotlib.pyplot as plt
+import seaborn as sns
 from string import ascii_uppercase
 
 #import single_cell_vis as sc_vis
 from .single_cell_vis import Visualizer
-from ..misc import nums_to_well_string
+from ..misc import nums_to_well_string, well_string_to_nums
 
 def make_query_string(columns, table_name, row_col_field_tuple=None):
     column_string = ''
@@ -506,17 +508,9 @@ def get_cell_coordinates_colors_sizes(image_table, min_size, celltypes, celltype
 
 def show_randomly_sampled_images(df, cp_out_top_folder, celltypes, celltype_color_dict, savename=None, num_images_to_sample=5,\
                                   min_size=80, distinguish_viable=False, x_min=0, x_max=1080, y_min=0, y_max=1080, n_dmso_images_to_sample=0):
-    """
-    Show randomly samples images from the dataframe that were segmented by cellprofiler
-    """
     vsr = Visualizer(df, cp_out_top_folder)
     im_ids = df['unique_image_id'].to_numpy()
-    unique_im_ids = np.unique(im_ids)
-    ## if we have less requested images than available images, just use all images
-    if (unique_im_ids.shape[0] <= num_images_to_sample) or (unique_im_ids.shape[0] <= n_dmso_images_to_sample):
-        sampled_ids = list(unique_im_ids)
-        num_images_to_sample = len(sampled_ids)
-    elif (n_dmso_images_to_sample > 0) and (n_dmso_images_to_sample <= num_images_to_sample): # sample treated and untreated if requested
+    if (n_dmso_images_to_sample > 0) and (n_dmso_images_to_sample <= num_images_to_sample):
         dmso_im_ids = im_ids[(df['Drug'] == 'DMSO').to_numpy()]
         treated_im_ids = im_ids[(df['Drug'] != 'DMSO').to_numpy()]
         sampled_ids_dmso = np.random.choice(dmso_im_ids, size=n_dmso_images_to_sample, replace=False)
@@ -586,7 +580,7 @@ def add_ticks_to_plate_image(in_ax, n_rows=16, n_cols=24):
     in_ax.set_xticks(col_ticks)
     in_ax.set_xticklabels(col_ticklabels)
     in_ax.set_yticks(row_ticks)
-    in_ax.set_yticklabels(row_ticks)
+    in_ax.set_yticklabels(row_ticklabels)
     return in_ax
 
 def plot_cellnumbes_on_ax(in_df, ax, n_rows=16, n_cols=24):
@@ -599,3 +593,231 @@ def plot_cellnumbes_on_ax(in_df, ax, n_rows=16, n_cols=24):
     ax = add_ticks_to_plate_image(ax, n_rows=n_rows, n_cols=n_cols)
     return ax, sh
     
+
+def fill_heatmap_array(df, target_col, row_column='Image_Metadata_row', column_column='Image_Metadata_column', aggregation_strategy='median'):
+    """
+    Fill a 2D array with values from a dataframe for plotting
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe to extract values from
+    
+    target_col : str
+        The column to extract values from
+    
+    row_column : str (optional)
+        The name of the column containing row information
+    
+    column_column : str (optional)
+        The name of the column containing column information
+    
+    heatmap_aggregation : str (optional)
+        The aggregation function to use for values that map to the same row and column. Default is 'median'
+    """
+    unique_rows = np.unique(df[row_column].to_numpy())
+    unique_cols = np.unique(df[column_column].to_numpy())
+    nrows = unique_rows.shape[0]
+    ncols = unique_cols.shape[0]
+    out_array = np.zeros((nrows, ncols))
+    for i, row in enumerate(unique_rows):
+        for k, col in enumerate(unique_cols):
+            vals = df[(df[row_column] == row) & (df[column_column] == col)][target_col].to_numpy()
+            if aggregation_strategy == 'median':
+                out_array[i,k] = np.nanmedian(vals)
+            elif aggregation_strategy == 'mean':
+                out_array[i,k] = np.nanmean(vals)
+            elif aggregation_strategy == 'sum':
+                out_array[i,k] = np.nansum(vals)
+            else:
+                raise ValueError('Invalid heatmap_aggregation value')
+    return out_array
+
+
+
+def get_aggregated_column_values(in_df, to_aggregate, aggregation_column, aggregation_strategy='median', return_agg_elems=True):
+    unique_agg_vals = in_df[aggregation_column].unique()
+    if isinstance(to_aggregate, list):
+        out_vals = []
+        for _ in range(len(to_aggregate)):
+            out_vals.append([])
+        target_columns = to_aggregate
+    else:
+        target_columns = [to_aggregate]
+        out_vals = [[]]
+    for val in unique_agg_vals:
+        for i, t_col in enumerate(target_columns):
+            if aggregation_strategy == 'median':
+                out_vals[i].append(np.nanmedian(in_df[in_df[aggregation_column] == val][t_col].to_numpy().astype(np.float16)))
+            elif aggregation_strategy == 'mean':
+                out_vals[i].append(np.nanmean(in_df[in_df[aggregation_column] == val][t_col].to_numpy().astype(np.float16)))
+            elif aggregation_strategy == 'sum':
+                out_vals[i].append(np.nansum(in_df[in_df[aggregation_column] == val][t_col].to_numpy().astype(np.float16)))
+            else:
+                raise ValueError('Invalid aggregation_strategy value')
+    if return_agg_elems:
+        return out_vals, unique_agg_vals
+    return out_vals
+
+
+def generate_df_and_arrays_for_plotting(in_df, plot_columns, aggregation_column='Image_Metadata_Well', \
+                                        row_column='Image_Metadata_row', col_column='Image_Metadata_column', aggregation_strategy='median', count_aggregation_strategy='sum'):
+    """
+
+    Generate a long-form dataframe and 2D arrays for each target column for plotting
+
+
+    """
+    out_arrays = []
+    plot_df_intensities = []
+    plot_df_normalized_intensities = []
+    plot_df_rows = []
+    plot_df_columns = []
+    plot_df_intensity_colnames = []
+    plot_df_agg_elems = []
+    for col in plot_columns:
+        ## assemble long-form dataframe 
+        if aggregation_column == 'Image_Metadata_field': 
+            vals = in_df[col].to_list()
+            agg_elems = in_df[aggregation_column].to_list()
+            rows = in_df[row_column].to_list()
+            columns = in_df[col_column].to_list()
+        else:
+            if 'Count' in col:
+                nested_vals, agg_elems = get_aggregated_column_values(in_df, [col, row_column, col_column], aggregation_column, aggregation_strategy=count_aggregation_strategy)
+            else:
+                nested_vals, agg_elems = get_aggregated_column_values(in_df, [col, row_column, col_column], aggregation_column, aggregation_strategy=aggregation_strategy)
+            vals = nested_vals[0]
+            rows = nested_vals[1]
+            columns = nested_vals[2]
+        int_colnames = [col] * len(vals)
+        ## aggregation for heatmap
+        heatmap = fill_heatmap_array(in_df, col, row_column=row_column, column_column=col_column, aggregation_strategy=aggregation_strategy)
+        out_arrays.append(heatmap)
+        plot_df_intensities.extend(vals)
+        plot_df_normalized_intensities.extend(np.array(vals) / np.nanmean(vals))
+        plot_df_intensity_colnames.extend(int_colnames)
+        plot_df_rows.extend(rows)
+        plot_df_columns.extend(columns)
+        plot_df_agg_elems.extend(agg_elems)
+
+    ## assemble long-form dataframe
+    plot_df = pd.DataFrame({'Value' : plot_df_intensities, 'NormalizedValue' : plot_df_normalized_intensities, 'Column' : plot_df_intensity_colnames, aggregation_column : plot_df_agg_elems, row_column : plot_df_rows, col_column: plot_df_columns})
+    return plot_df, out_arrays
+        
+
+
+def image_qc_plot(dfs, target_intensity_columns, savepath,\
+                   platenames=None, other_qc_columns=None, well_column='Image_Metadata_Well', \
+                   row_column='Image_Metadata_row', col_column='Image_Metadata_column', aggregation_strategy='median', plot_orientation='vertical',exclusion_matrix_to_plot=None):
+    """
+    Plot the distributions of target_intensity_columns and other_qc_columns for input dataframes. 
+    Column values will be plotted as averages per well position in a heatmap and as histograms.
+    Additionally, correlations of target_intensity_columns with row and column positions will be plotted to check for spatial effects.
+
+    Parameters
+    ----------
+    dfs : list of pd.DataFrame
+        List of dataframes to plot, usually cellprofiler output dataframes on the Image leve
+    target_intensity_columns : list of str
+        List of column names to plot, should contain intensity values
+    savepath : str
+        Path to save the plot to, can be None. Then imshow() will be called instead of savefig()
+    
+    platenames (optional): list of str
+        List of platenames to plot, if None, plates will be called Plate 1, Plate 2, etc.
+    
+    other_qc_columns (optional): list of str
+        List of column names to plot that should not be plotted together with target columns, should contain other qc values
+
+    well_column (optional): str
+        Name of the column that indicates the well. Default is 'Image_Metadata_Well'
+    """
+    if isinstance(other_qc_columns, list):
+        plot_qc_columns = target_intensity_columns + other_qc_columns
+    else:
+        plot_qc_columns = target_intensity_columns
+    if platenames is None:
+        platenames = ['Plate {}'.format(i+1) for i in range(len(dfs))]
+    if isinstance(dfs, pd.DataFrame):
+        dfs = [dfs]
+    if not (exclusion_matrix_to_plot is None):
+        if not isinstance(exclusion_matrix_to_plot, list):
+            exclusion_matrix_to_plot = [exclusion_matrix_to_plot]
+    plot_dfs = []
+    nested_plot_arrays = []
+    for i ,df in enumerate(dfs):
+        platename = platenames[i]
+        plot_df, heatmaps = generate_df_and_arrays_for_plotting(df, plot_qc_columns, aggregation_column=well_column, row_column=row_column,\
+                                                                col_column=col_column, aggregation_strategy=aggregation_strategy)
+        plot_dfs.append(plot_df.assign(Plate=[platename]*plot_df.shape[0]))
+        nested_plot_arrays.append(heatmaps)
+    
+    ## number of elements to plot depends on whether an exclusion matrix is provided
+    n_qc_elems_to_plot = len(plot_qc_columns)+3
+    if not (exclusion_matrix_to_plot is None):
+        n_qc_elems_to_plot += 1
+    ###### make plot
+    if plot_orientation == 'vertical':
+        num_fig_rows = n_qc_elems_to_plot
+        num_fig_cols = len(dfs)
+    else:
+        num_fig_rows = len(dfs)
+        num_fig_cols = n_qc_elems_to_plot
+    fig, ax = plt.subplots(figsize=(8*num_fig_cols,6*num_fig_rows), nrows=num_fig_rows, ncols=num_fig_cols)
+    for k, platename in enumerate(platenames):
+        plot_df = plot_dfs[k]
+        heatmaps = nested_plot_arrays[k]
+        
+        for i, qc_col in enumerate(plot_qc_columns):
+            if len(dfs) == 1:
+                heatmap_index = i
+            elif plot_orientation == 'vertical':
+                heatmap_index = i,k
+            else:
+                heatmap_index = k,i
+            heatmap_min, heatmap_max = np.percentile(plot_df[plot_df['Column'] == qc_col]['Value'].to_numpy(), (2.5,97.5))
+            sh = ax[heatmap_index].imshow(heatmaps[i], cmap='coolwarm', vmin=heatmap_min, vmax=heatmap_max)
+            ax[heatmap_index].set_title(platename + '\n' + qc_col + '\n{} per well'.format(aggregation_strategy))
+            ax[heatmap_index] = add_ticks_to_plate_image(ax[heatmap_index])
+            plt.colorbar(sh, ax=ax[heatmap_index])
+        if len(dfs) == 1:
+            exclusion_matrix_index = -4
+            hist_index = -3
+            corr_index1 = -2
+            corr_index2 = -1
+        elif plot_orientation == 'vertical':
+            exclusion_matrix_index = -4,k
+            hist_index = -3,k
+            corr_index1 = -2,k
+            corr_index2 = -1,k
+        else:
+            exclusion_matrix_index = k,-4
+            hist_index = k,-3
+            corr_index1 = k,-2
+            corr_index2 = k,-1
+        if not (exclusion_matrix_to_plot is None):
+            mat_or_df = exclusion_matrix_to_plot[k]
+            if isinstance(mat_or_df, pd.DataFrame):
+                plot_matrix = np.zeros((heatmaps[0].shape[0], heatmaps[0].shape[1]))
+                for well in mat_or_df['Image_Metadata_Well'].unique():
+                    row, col = well_string_to_nums(well)
+                    plot_matrix[row-1, col-1] = 1
+            else:
+                plot_matrix = mat_or_df
+            ax[exclusion_matrix_index].imshow(plot_matrix, cmap='coolwarm')
+            ax[exclusion_matrix_index].set_title(platename + '\n' + 'Exclusion matrix')
+            ax[exclusion_matrix_index] = add_ticks_to_plate_image(ax[exclusion_matrix_index])
+        sns.histplot(plot_df, x='NormalizedValue', hue='Column', ax=ax[hist_index], kde=True, common_norm=False)
+        ax[hist_index].set_title(platename + '\n' + 'normalized intensity histograms'.format(aggregation_strategy))
+        sns.scatterplot(plot_df, y='Value', x=row_column, hue='Column', ax=ax[corr_index1])
+        ax[corr_index1].set_title(platename + '\n' + 'intensities versus rows'.format(aggregation_strategy))
+        #sns.scatterplot(plot_df, y='NormalizedValue', x=col_column, hue='Column', ax=ax[-1,k])
+        sns.scatterplot(plot_df, y='Value', x=col_column, hue='Column', ax=ax[corr_index2])
+        ax[corr_index2].set_title(platename + '\n' + 'intensities versus columns'.format(aggregation_strategy))
+    fig.tight_layout()
+    if savepath is None:
+        fig.show()
+    else:
+        fig.savefig(savepath)
+    return

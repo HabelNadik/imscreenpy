@@ -1,5 +1,5 @@
-CELLTYPE_SCRIPT_PATH=/nobackup/lab_ccri_bicu/internal/ccasey/projects/pop/nb/soren/models/cluster_scripts/run_nb_prediction.sh
-CELLTYPE_LATENT_SCRIPT_PATH=/nobackup/lab_ccri_bicu/internal/ccasey/projects/pop/nb/soren/models/cluster_scripts/run_nb_prediction_with_latent.sh
+CELLTYPE_SCRIPT_PATH=None
+CELLTYPE_LATENT_SCRIPT_PATH=None
 #CELLTYPE_FILENAME_TEMPLATE={}_classes_v{}_model_start{}_end{}.txt
 FLUOROPHORES=Alexa647,Cy3
 DB_CELL_TABLE_NAME=neuro_Per_Object

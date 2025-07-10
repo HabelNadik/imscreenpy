@@ -1,0 +1,10 @@
+VIABILITY_LATENT_SCRIPT_PATH=None
+VIABILITY_SCRIPT_PATH=None
+VIABILITY_FILENAME_TEMPLATE={}_viability_predictions_gmm_v{}_start{}_end{}.txt
+VIABILITY_LATENT_FILENAME_TEMPLATE={}_viability_predictions_gmm_v{}_start{}_end{}_latent_representation.txt
+CELLTYPE_SCRIPT_PATH=None
+CELLTYPE_FILENAME_TEMPLATE={}_{}_predictions_start{}_end{}.txt
+FLUOROPHORES=APC,GFP,PE
+DB_CELL_TABLE_NAME=Per_Object
+DB_IM_TABLE_NAME=Per_Image
+FLUO_COLUMN_PATTERNS=cells_dist_Intensity_MedianIntensity_{},nuclei_Intensity_MeanIntensity_{},nuclei_Intensity_UpperQuartileIntensity_{}
