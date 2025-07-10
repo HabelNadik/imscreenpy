@@ -31,12 +31,12 @@ If you want to execute the full workflow that we used in our work, you will need
 
 You will need patchpy, which you will soon be able to find under https://github.com/HabelNadik/patchpy.
 
-You will have to set up a config folder that contains the config files describing the CellProfiler columns that you want to use and the locations of scripts for the predicting cell types and cell states. Defaults for the analyses that we performed are located in `src/imscreenpy/config_files`.
+You will have to set up a config folder that contains the config files describing the CellProfiler columns that you want to use and the locations of scripts for the predicting cell types and cell states. Defaults for the analyses that we performed - minus the paths to our local scripts - are located in `src/imscreenpy/config_files`.
 
 
 ## Using imscreenpy
 
-We have used imscreenpy to analze data from peripheral blood mononuclear cells (PBMCs) and bone marrow mononuclear cells (BMMCs) as well as cell lines from other non-hematopoietic tissues. The full workflow as we use it in our work is executed by `main.py`, but we also provide notebooks that demonstrate the functionalities.
+We have used imscreenpy to analze data from peripheral blood mononuclear cells (PBMCs) and bone marrow mononuclear cells (BMMCs) as well as cell lines from other non-hematopoietic tissues. The full workflow as we use it in our work is executed by `main.py`, but we also provide notebooks that you may find instructive.
 
 ### Analysis on PBMCs or BMMCs
 The folder `pbmc_example_analyses` contains scripts and notebooks that give an overview of imscreenpy's functionalities for the analysis of PBMCs or BMMNCs. If you want to learn more about how to analyse this type of screening data, this folder is a good place to start.
