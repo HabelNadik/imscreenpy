@@ -10,4 +10,4 @@ The notebook `analyse_drug_responses.ipynb` demonstrates the functionality for s
 
 ## Downloading the required data
 
-To run the notebooks, you will need to download the input data. At the moment, they assume that all their input data are present in a sub-folder called `example_data`. These files are a bit too large to be put on github. We are working on generating a zenodo record such that you can download the data and perform the full workflows yourself.
+To run the notebooks, you will need to download the input data. At the moment, they assume that all their input data are present in a sub-folder called `example_data`. These files are a bit too large to be put on github. We are working on generating a zenodo record such that you can download the data and perform the full workflows yourself, but this may still take a bit.
