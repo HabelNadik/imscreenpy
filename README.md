@@ -40,8 +40,8 @@ To make the workflow more efficient on a cohort level, you can set up an annotat
 
 We have used imscreenpy to analze data from peripheral blood mononuclear cells (PBMCs) and bone marrow mononuclear cells (BMMCs) as well as cell lines from other non-hematopoietic tissues. The full workflow as we use it in our work is executed by `main.py`, but we also provide notebooks that you may find instructive in `pbmc_example_analyses`.
 
-### Analysis on PBMCs or BMMCs
-The folder `pbmc_example_analyses` contains scripts and notebooks that give an overview of imscreenpy's functionalities for the analysis of PBMCs or BMMNCs. We have applied these analyses in a manuscript that should be published soon. If you want to learn more about how to analyse this type of screening data, this folder is a good place to start.
+### Analysis on PBMCs or BMMCs (*Haladik et al.*)
+The folder `pbmc_example_analyses` contains scripts and notebooks that give an overview of imscreenpy's functionalities for the analysis of PBMCs or BMMNCs. We have applied these analyses in a manuscript that should be published soon. If you want to learn more about how to analyse this type of screening data, this folder is a good place to start and we will make another repository that demonstrates using `imscreenpy` on a cohort level available soon.
 
-### Analysis as described in *Strohmenger et al.*
+### Analysis on neuroblastoma (*Strohmenger et al.*)
 If you want to reproduce the analysis from *Strohmenger et al.* and run `main.py` locally with pre-trained autoencoders from `patchpy`, you will have to change the paths in `imscreenpy/config_files/nb_paths_and_patterns.txt` to match your local system. The full analysis from that manuscript will be publicly available soon and we will then provide an update here.
