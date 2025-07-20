@@ -1,0 +1,757 @@
+DestWell	DestinationPlate	Type_A	ConcPoint	CompoundName	AssayConc_uM
+A01	2121039	Cpd	3	Pralatrexate	0.0070551
+A02	2121039	Cpd	3	Alitretinoin	0.02
+A03	2121039	Cpd	1	Daunorubicin	1
+A04	2121039	Cpd	2	Idelalisib	0.1
+A05	2121039	Cpd	3	Alisertib	0.01
+A06	2121039	Cpd	1	Amsacrine	1
+A07	2121039	Cpd	2	Busulfan	0.1
+A08	2121039	Cpd	3	Ceritinib	0.01
+A09	2121039	Cpd	1	Elacytarabine	1
+A10	2121039	Cpd	3	Crizotinib	0.02
+A11	2121039	Cpd	1	Pacritinib	1
+A12	2121039	Cpd	2	Palifosfamide	0.1
+A13	2121039	DMSO	D		
+A14	2121039	Cpd	3	Semaxanib	0.01
+A15	2121039	Cpd	1	Erlotinib	2
+A16	2121039	Cpd	3	JQ1-(+)	0.0096
+A17	2121039	Cpd	2	Lovastatin	0.1
+A18	2121039	Cpd	3	Melphalan	0.01
+A19	2121039	Cpd	1	Rosuvastatin	1
+A20	2121039	Cpd	1	Palifosfamide	1
+A21	2121039	Cpd	3	Semaxanib	0.01
+A22	2121039	Cpd	1	Neratinib	1
+A24	2121039	Cpd	1	Idelalisib	1
+B01	2121039	Cpd	3	Bosutinib	0.01
+B02	2121039	Cpd	1	Gilteritinib	0.1
+B03	2121039	Cpd	3	Vismodegib	0.02
+B04	2121039	Cpd	1	Amsacrine	1
+B05	2121039	Cpd	3	Thioguanine	0.01
+B06	2121039	Cpd	2	I-BET762	0.1
+B07	2121039	Cpd	3	Bexarotene	0.02
+B08	2121039	Cpd	3	Volasertib	0.01
+B09	2121039	Cpd	3	Cabozantinib	0.02
+B10	2121039	Cpd	2	Gilteritinib	0.01
+B11	2121039	Cpd	1	Olaparib	1
+B12	2121039	Cpd	1	Fludarabine	1
+B13	2121039	Cpd	3	Rosuvastatin	0.01
+B14	2121039	DMSO	D		
+B15	2121039	Cpd	2	Gilteritinib	0.01
+B16	2121039	Cpd	2	Erlotinib	0.2
+B17	2121039	Cpd	3	MLN2480	0.01
+B18	2121039	Cpd	3	Palifosfamide	0.01
+B19	2121039	Cpd	2	Olaparib	0.1
+B20	2121039	Cpd	2	Glasdegib	0.1
+B21	2121039	Cpd	1	Venetoclax	1
+B22	2121039	Cpd	1	Vandetanib	2
+B23	2121039	Cpd	3	Veliparib	0.01
+B24	2121039	Cpd	1	TAK-733	1
+C01	2121039	Cpd	3	Nilotinib	0.02
+C02	2121039	Cpd	3	Regorafenib	0.02
+C03	2121039	Cpd	2	Daunorubicin	0.1
+C04	2121039	Cpd	3	Elacytarabine	0.01
+C05	2121039	Cpd	1	Glasdegib	1
+C06	2121039	Cpd	2	Thioguanine	0.1
+C07	2121039	Cpd	2	EPZ-6438	0.1
+C08	2121039	Cpd	1	EPZ-6438	1
+C09	2121039	Cpd	2	Bexarotene	0.2
+C10	2121039	Cpd	1	Idasanutlin	1
+C11	2121039	DMSO	D		
+C12	2121039	Cpd	1	Pralatrexate	0.70551
+C13	2121039	Cpd	2	Volasertib	0.1
+C14	2121039	Cpd	1	Erlotinib	2
+C15	2121039	DMSO	D		
+C16	2121039	Cpd	1	Vismodegib	2
+C17	2121039	Cpd	2	Pralatrexate	0.070551
+C18	2121039	Cpd	2	Vandetanib	0.2
+C19	2121039	Cpd	1	EPZ-6438	1
+C20	2121039	Cpd	3	Glasdegib	0.01
+C21	2121039	Cpd	3	ORY1001	0.01
+C22	2121039	Cpd	2	Bafetinib	0.1
+C23	2121039	Cpd	1	Melphalan	1
+C24	2121039	Cpd	2	Semaxanib	0.1
+D01	2121039	Cpd	3	Daunorubicin	0.01
+D02	2121039	Cpd	1	Semaxanib	1
+D03	2121039	Cpd	1	Carfilzomib	0.000117
+D04	2121039	Cpd	3	Trametinib	0.01
+D05	2121039	Cpd	2	Busulfan	0.1
+D06	2121039	Cpd	2	Bafetinib	0.1
+D07	2121039	Cpd	1	Bexarotene	2
+D08	2121039	Cpd	1	MLN0128	1
+D09	2121039	Cpd	2	Aminopterin	0.1
+D10	2121039	Cpd	3	Busulfan	0.01
+D11	2121039	Cpd	1	MLN2480	1
+D12	2121039	DMSO	D		
+D13	2121039	Cpd	3	ORY1001	0.01
+D14	2121039	Cpd	2	Fludarabine	0.1
+D15	2121039	Cpd	3	Bosutinib	0.01
+D16	2121039	DMSO	D		
+D17	2121039	Cpd	3	Pralatrexate	0.0070551
+D18	2121039	Cpd	2	Trametinib	0.1
+D19	2121039	Cpd	3	Aminopterin	0.01
+D20	2121039	Cpd	3	Melphalan	0.01
+D21	2121039	Cpd	2	ORY1001	0.1
+D22	2121039	Cpd	1	Ibrutinib	1
+D23	2121039	Cpd	3	Mivebresib	0.01
+D24	2121039	Cpd	2	Melphalan	0.1
+E01	2121039	Cpd	3	Thioguanine	0.01
+E02	2121039	DMSO	D		
+E03	2121039	Cpd	1	Vemurafenib	2
+E04	2121039	Cpd	1	Aminopterin	1
+E05	2121039	Cpd	1	Bosutinib	1
+E06	2121039	Cpd	1	Bafetinib	1
+E07	2121039	Cpd	1	Bosutinib	1
+E08	2121039	Cpd	1	Bexarotene	2
+E09	2121039	DMSO	D		
+E10	2121039	Cpd	2	Ixazomib	0.1
+E11	2121039	Cpd	3	Vandetanib	0.02
+E12	2121039	Cpd	1	Guadecitabine	1
+E13	2121039	Cpd	2	CB-839	0.1
+E14	2121039	Cpd	2	Pralatrexate	0.070551
+E15	2121039	Cpd	3	Olaparib	0.01
+E16	2121039	Cpd	1	CB-839	1
+E17	2121039	DMSO	D		
+E18	2121039	Cpd	1	GSK126	1
+E19	2121039	Cpd	3	Cabozantinib	0.02
+E20	2121039	Cpd	1	Ceritinib	1
+E21	2121039	Cpd	2	CB-839	0.1
+E22	2121039	Cpd	3	Ixazomib	0.01
+E23	2121039	Cpd	2	Alisertib	0.1
+E24	2121039	Cpd	2	Carfilzomib	0.0000117
+F01	2121039	DMSO	D		
+F02	2121039	Cpd	2	Pixantrone	0.1
+F03	2121039	Cpd	1	JQ1-(+)	0.96
+F04	2121039	Cpd	3	Gilteritinib	0.001
+F05	2121039	Cpd	1	Olaparib	1
+F06	2121039	Cpd	2	Semaxanib	0.1
+F07	2121039	Cpd	1	Neratinib	1
+F08	2121039	Cpd	1	Semaxanib	1
+F09	2121039	Cpd	1	Carfilzomib	0.000117
+F10	2121039	DMSO	D		
+F11	2121039	Cpd	3	Ceritinib	0.01
+F12	2121039	Cpd	3	Crizotinib	0.02
+F13	2121039	Cpd	2	Regorafenib	0.2
+F14	2121039	Cpd	2	Regorafenib	0.2
+F15	2121039	Cpd	2	MLN4924	0.1
+F16	2121039	Cpd	3	Devimistat	0.01
+F17	2121039	Cpd	2	Ceritinib	0.1
+F18	2121039	DMSO	D		
+F19	2121039	Cpd	3	Pacritinib	0.01
+F20	2121039	Cpd	2	Carfilzomib	0.0000117
+F21	2121039	Cpd	3	Regorafenib	0.02
+F22	2121039	Cpd	3	Devimistat	0.01
+F23	2121039	Cpd	3	MLN0128	0.01
+F24	2121039	Cpd	1	ORY1001	1
+G01	2121039	Cpd	3	MLN2480	0.01
+G02	2121039	Cpd	2	Guadecitabine	0.1
+G03	2121039	Cpd	3	Lovastatin	0.01
+G04	2121039	DMSO	D		
+G05	2121039	Cpd	1	IPI-145	1
+G06	2121039	Cpd	2	Pacritinib	0.1
+G07	2121039	Cpd	2	Bosutinib	0.1
+G08	2121039	Cpd	3	Bafetinib	0.01
+G09	2121039	Cpd	2	Venetoclax	0.1
+G10	2121039	Cpd	1	Busulfan	1
+G11	2121039	Cpd	1	Alisertib	1
+G12	2121039	Cpd	3	Gilteritinib	0.001
+G13	2121039	Cpd	3	Guadecitabine	0.01
+G14	2121039	Cpd	1	Cediranib	1
+G15	2121039	Cpd	2	Trametinib	0.1
+G16	2121039	Cpd	2	Nilotinib	0.2
+G17	2121039	Cpd	1	IPI-145	1
+G18	2121039	Cpd	1	Crizotinib	2
+G19	2121039	DMSO	D		
+G20	2121039	Cpd	1	Cabozantinib	2
+G21	2121039	Cpd	2	Mivebresib	0.1
+G22	2121039	Cpd	2	Elacytarabine	0.1
+G23	2121039	Cpd	3	Carfilzomib	0.00000117
+G24	2121039	Cpd	3	Mivebresib	0.01
+H01	2121039	Cpd	1	Nilotinib	2
+H02	2121039	Cpd	1	Devimistat	1
+H03	2121039	DMSO	D		
+H05	2121039	Cpd	1	Ixazomib	1
+H06	2121039	Cpd	1	ORY1001	1
+H07	2121039	Cpd	1	Bafetinib	1
+H08	2121039	Cpd	3	Neratinib	0.01
+H09	2121039	Cpd	2	Amsacrine	0.1
+H10	2121039	Cpd	3	Amsacrine	0.01
+H11	2121039	Cpd	2	Vemurafenib	0.2
+H12	2121039	Cpd	3	Nilotinib	0.02
+H13	2121039	Cpd	2	I-BET762	0.1
+H14	2121039	Cpd	3	MLN0128	0.01
+H15	2121039	Cpd	1	Aminopterin	1
+H16	2121039	Cpd	2	EPZ-6438	0.1
+H17	2121039	Cpd	1	Vismodegib	2
+H18	2121039	Cpd	3	CB-839	0.01
+H19	2121039	Cpd	1	Alitretinoin	2
+H20	2121039	DMSO	D		
+H21	2121039	Cpd	1	EPZ-5676	1
+H22	2121039	Cpd	3	EPZ-5676	0.01
+H23	2121039	Cpd	2	Daunorubicin	0.1
+H24	2121039	Cpd	2	Ibrutinib	0.1
+I01	2121039	Cpd	1	Vandetanib	2
+I03	2121039	Cpd	3	I-BET762	0.01
+I04	2121039	Cpd	2	MLN4924	0.1
+I05	2121039	Cpd	2	Amsacrine	0.1
+I06	2121039	DMSO	D		
+I07	2121039	Cpd	3	Erlotinib	0.02
+I08	2121039	Cpd	2	Cabozantinib	0.2
+I09	2121039	Cpd	2	EPZ-5676	0.1
+I10	2121039	Cpd	2	Alitretinoin	0.2
+I11	2121039	Cpd	1	EPZ-5676	1
+I12	2121039	Cpd	2	MLN0128	0.1
+I13	2121039	Cpd	3	GSK126	0.01
+I14	2121039	Cpd	2	GSK126	0.1
+I15	2121039	Cpd	1	Trametinib	1
+I16	2121039	Cpd	1	Veliparib	1
+I17	2121039	Cpd	3	MLN4924	0.01
+I18	2121039	Cpd	1	Venetoclax	1
+I19	2121039	Cpd	2	MLN0128	0.1
+I20	2121039	Cpd	3	Aminopterin	0.01
+I21	2121039	DMSO	D		
+I22	2121039	Cpd	1	Lovastatin	1
+I23	2121039	Cpd	2	Pixantrone	0.1
+I24	2121039	Cpd	1	Rosuvastatin	1
+J01	2121039	Cpd	1	Palifosfamide	1
+J02	2121039	Cpd	2	Bosutinib	0.1
+J03	2121039	Cpd	3	Cediranib	0.01
+J04	2121039	Cpd	3	Ibrutinib	0.01
+J05	2121039	DMSO	D		
+J06	2121039	Cpd	1	CB-839	1
+J07	2121039	Cpd	1	Ceritinib	1
+J08	2121039	Cpd	1	Mivebresib	1
+J09	2121039	Cpd	3	MLN4924	0.01
+J10	2121039	Cpd	2	JQ1-(+)	0.096
+J11	2121039	Cpd	2	Venetoclax	0.1
+J12	2121039	Cpd	2	Veliparib	0.1
+J13	2121039	Cpd	3	Venetoclax	0.01
+J14	2121039	Cpd	2	Crizotinib	0.2
+J15	2121039	Cpd	1	Volasertib	1
+J16	2121039	Cpd	1	Ibrutinib	1
+J17	2121039	Cpd	1	Pixantrone	1
+J18	2121039	Cpd	1	Idasanutlin	1
+J19	2121039	Cpd	2	Pacritinib	0.1
+J20	2121039	Cpd	3	Amsacrine	0.01
+J21	2121039	Cpd	1	I-BET762	1
+J22	2121039	DMSO	D		
+J23	2121039	Cpd	3	Trametinib	0.01
+J24	2121039	Cpd	2	IPI-145	0.1
+K01	2121039	Cpd	3	Glasdegib	0.01
+K02	2121039	Cpd	1	Regorafenib	2
+K03	2121039	Cpd	1	Alisertib	1
+K04	2121039	Cpd	1	Cabozantinib	2
+K05	2121039	Cpd	1	Regorafenib	2
+K06	2121039	Cpd	3	Pixantrone	0.01
+K07	2121039	Cpd	1	Vemurafenib	2
+K08	2121039	DMSO	D		
+K09	2121039	Cpd	2	Elacytarabine	0.1
+K10	2121039	Cpd	3	Veliparib	0.01
+K11	2121039	Cpd	2	Ibrutinib	0.1
+K12	2121039	Cpd	1	Lovastatin	1
+K13	2121039	Cpd	2	Bexarotene	0.2
+K14	2121039	Cpd	1	Guadecitabine	1
+K15	2121039	Cpd	1	Thioguanine	1
+K16	2121039	DMSO	D		
+K17	2121039	Cpd	1	Crizotinib	2
+K18	2121039	Cpd	1	Daunorubicin	1
+K19	2121039	Cpd	3	Palifosfamide	0.01
+K20	2121039	Cpd	2	Lovastatin	0.1
+K21	2121039	Cpd	2	Cediranib	0.1
+K22	2121039	Cpd	3	Pixantrone	0.01
+K23	2121039	DMSO	D		
+K24	2121039	Cpd	2	Melphalan	0.1
+L01	2121039	Cpd	3	TAK-733	0.01
+L02	2121039	Cpd	3	Vemurafenib	0.02
+L03	2121039	Cpd	1	Elacytarabine	1
+L04	2121039	Cpd	2	Idasanutlin	0.1
+L05	2121039	Cpd	2	MLN2480	0.1
+L06	2121039	Cpd	1	Idelalisib	1
+L07	2121039	DMSO	D		
+L08	2121039	Cpd	3	Erlotinib	0.02
+L09	2121039	Cpd	2	ORY1001	0.1
+L10	2121039	Cpd	3	Venetoclax	0.01
+L11	2121039	Cpd	3	Busulfan	0.01
+L12	2121039	Cpd	2	Palifosfamide	0.1
+L13	2121039	Cpd	1	TAK-733	1
+L14	2121039	Cpd	3	Carfilzomib	0.00000117
+L15	2121039	DMSO	D		
+L16	2121039	Cpd	3	JQ1-(+)	0.0096
+L17	2121039	Cpd	3	Bafetinib	0.01
+L18	2121039	Cpd	3	Daunorubicin	0.01
+L19	2121039	Cpd	1	Nilotinib	2
+L20	2121039	Cpd	3	Guadecitabine	0.01
+L21	2121039	Cpd	2	Devimistat	0.1
+L22	2121039	Cpd	1	I-BET762	1
+L23	2121039	Cpd	3	Idelalisib	0.01
+L24	2121039	DMSO	D		
+M01	2121039	Cpd	2	Idelalisib	0.1
+M02	2121039	Cpd	1	Mivebresib	1
+M03	2121039	Cpd	1	Cediranib	1
+M04	2121039	Cpd	1	MLN2480	1
+M05	2121039	Cpd	2	Olaparib	0.1
+M06	2121039	Cpd	1	Trametinib	1
+M07	2121039	Cpd	3	Fludarabine	0.01
+M08	2121039	Cpd	2	Thioguanine	0.1
+M09	2121039	Cpd	2	Ceritinib	0.1
+M10	2121039	DMSO	D		
+M11	2121039	Cpd	1	Pralatrexate	0.70551
+M12	2121039	Cpd	3	Pacritinib	0.01
+M13	2121039	Cpd	2	Alitretinoin	0.2
+M14	2121039	DMSO	D		
+M15	2121039	Cpd	3	Cediranib	0.01
+M16	2121039	Cpd	3	Idasanutlin	0.01
+M17	2121039	Cpd	3	Ixazomib	0.01
+M18	2121039	Cpd	2	MLN2480	0.1
+M19	2121039	Cpd	3	EPZ-6438	0.01
+M20	2121039	Cpd	1	Fludarabine	1
+M21	2121039	Cpd	2	Vismodegib	0.2
+M22	2121039	Cpd	2	Veliparib	0.1
+M23	2121039	Cpd	2	Cediranib	0.1
+M24	2121039	Cpd	2	TAK-733	0.1
+N01	2121039	Cpd	1	Ixazomib	1
+N02	2121039	Cpd	3	Vandetanib	0.02
+N03	2121039	Cpd	2	Rosuvastatin	0.1
+N04	2121039	Cpd	1	MLN4924	1
+N05	2121039	Cpd	2	Mivebresib	0.1
+N06	2121039	Cpd	1	Pixantrone	1
+N07	2121039	Cpd	3	I-BET762	0.01
+N08	2121039	Cpd	2	Volasertib	0.1
+N09	2121039	DMSO	D		
+N10	2121039	Cpd	1	MLN4924	1
+N11	2121039	Cpd	2	Vandetanib	0.2
+N12	2121039	Cpd	2	TAK-733	0.1
+N13	2121039	DMSO	D		
+N14	2121039	Cpd	3	Fludarabine	0.01
+N15	2121039	Cpd	1	JQ1-(+)	0.96
+N16	2121039	Cpd	2	Alisertib	0.1
+N17	2121039	Cpd	2	Rosuvastatin	0.1
+N18	2121039	Cpd	2	Nilotinib	0.2
+N19	2121039	Cpd	3	Elacytarabine	0.01
+N20	2121039	Cpd	2	Guadecitabine	0.1
+N21	2121039	Cpd	1	Melphalan	1
+N22	2121039	Cpd	3	Alisertib	0.01
+N23	2121039	Cpd	2	Devimistat	0.1
+N24	2121039	Cpd	3	GSK126	0.01
+O01	2121039	Cpd	1	Gilteritinib	0.1
+O02	2121039	Cpd	3	Alitretinoin	0.02
+O03	2121039	Cpd	3	Ibrutinib	0.01
+O04	2121039	Cpd	1	Alitretinoin	2
+O05	2121039	Cpd	3	Rosuvastatin	0.01
+O06	2121039	Cpd	3	IPI-145	0.01
+O07	2121039	Cpd	2	Fludarabine	0.1
+O08	2121039	Cpd	1	Veliparib	1
+O09	2121039	Cpd	3	EPZ-5676	0.01
+O10	2121039	Cpd	2	IPI-145	0.1
+O11	2121039	Cpd	2	Aminopterin	0.1
+O12	2121039	DMSO	D		
+O13	2121039	Cpd	1	MLN0128	1
+O14	2121039	Cpd	2	Erlotinib	0.2
+O15	2121039	Cpd	2	Vismodegib	0.2
+O16	2121039	Cpd	2	Crizotinib	0.2
+O17	2121039	Cpd	1	Pacritinib	1
+O18	2121039	Cpd	2	EPZ-5676	0.1
+O20	2121039	Cpd	3	Vismodegib	0.02
+O21	2121039	Cpd	3	Olaparib	0.01
+O22	2121039	Cpd	1	Thioguanine	1
+O23	2121039	Cpd	3	Neratinib	0.01
+O24	2121039	Cpd	3	Vemurafenib	0.02
+P01	2121039	Cpd	2	Ixazomib	0.1
+P02	2121039	Cpd	2	Idasanutlin	0.1
+P03	2121039	Cpd	3	Lovastatin	0.01
+P04	2121039	Cpd	3	EPZ-6438	0.01
+P05	2121039	Cpd	2	Cabozantinib	0.2
+P06	2121039	Cpd	2	GSK126	0.1
+P07	2121039	Cpd	3	CB-839	0.01
+P08	2121039	Cpd	2	Glasdegib	0.1
+P09	2121039	Cpd	3	Volasertib	0.01
+P10	2121039	Cpd	1	Volasertib	1
+P11	2121039	DMSO	D		
+P12	2121039	Cpd	3	Idelalisib	0.01
+P13	2121039	Cpd	3	TAK-733	0.01
+P14	2121039	Cpd	3	IPI-145	0.01
+P15	2121039	Cpd	3	Bexarotene	0.02
+P16	2121039	Cpd	1	Busulfan	1
+P17	2121039	Cpd	1	GSK126	1
+P18	2121039	Cpd	2	Neratinib	0.1
+P19	2121039	Cpd	1	Devimistat	1
+P20	2121039	Cpd	2	Vemurafenib	0.2
+P21	2121039	Cpd	2	Neratinib	0.1
+P22	2121039	Cpd	1	Glasdegib	1
+P23	2121039	Cpd	3	Idasanutlin	0.01
+P24	2121039	Cpd	2	JQ1-(+)	0.096
+A01	2121040	Cpd	3	Thiotepa	0.01
+A02	2121040	Cpd	3	Sorafenib	0.01
+A03	2121040	Cpd	1	Ruxolitinib	1
+A04	2121040	Cpd	2	Abemaciclib	0.1
+A05	2121040	Cpd	3	Prednisolone	0.01
+A06	2121040	Cpd	1	PKC-412(Midostaurin)	1
+A07	2121040	Cpd	2	Nintedanib (BIBF 1120)	0.1
+A08	2121040	Cpd	3	Temsirolimus	0.01
+A09	2121040	Cpd	1	Tofacitinib (CP-690550,Tasocitinib)	1
+A10	2121040	Cpd	3	Venetoclax+Dasatinib	0.005+0.005
+A11	2121040	Cpd	1	Venetoclax+Trametinib	0.5+0.5
+A12	2121040	Cpd	2	AP24534  Ponatinib	0.1
+A13	2121040	DMSO	D		
+A14	2121040	Cpd	3	CC885	0.01
+A15	2121040	Cpd	1	Everolimus	1
+A16	2121040	Cpd	3	D9A2	0.01
+A17	2121040	Cpd	2	Belinostat	0.1
+A18	2121040	Cpd	3	Quizartinib (AC220)	0.01
+A19	2121040	Cpd	1	Romidepsin	2
+A20	2121040	Cpd	1	AP24534  Ponatinib	1
+A21	2121040	Cpd	3	CC885	0.01
+A22	2121040	Cpd	1	Irinotecan	1
+A24	2121040	Cpd	1	Abemaciclib	1
+B01	2121040	Cpd	3	Gefitinib	0.01
+B02	2121040	Cpd	1	Palbociclib	1
+B03	2121040	Cpd	3	Cytarabine+Etopside	0.005+0.01
+B04	2121040	Cpd	1	PKC-412(Midostaurin)	1
+B05	2121040	Cpd	3	Etoposide	0.02
+B06	2121040	Cpd	2	Pazopanib	0.0443
+B07	2121040	Cpd	3	5-Fluorouracil	0.010005677
+B08	2121040	Cpd	3	Dasatinib	0.01
+B09	2121040	Cpd	3	Cytarabine+Mitoxantrone	0.005+0.005
+B10	2121040	Cpd	2	Palbociclib	0.1
+B11	2121040	Cpd	1	Pentostatin	1
+B12	2121040	Cpd	1	Dabrafenib (GSK2118436)	1
+B13	2121040	Cpd	3	Romidepsin	0.02
+B14	2121040	DMSO	D		
+B15	2121040	Cpd	2	Palbociclib	0.1
+B16	2121040	Cpd	2	Everolimus	0.1
+B17	2121040	Cpd	3	Venetoclax+Dinaciclib	0.005+0.005
+B18	2121040	Cpd	3	AP24534  Ponatinib	0.01
+B19	2121040	Cpd	2	Pentostatin	0.1
+B20	2121040	Cpd	2	Dinaciclib (SCH727965)	0.1
+B21	2121040	Cpd	1	CPD000466355;idarubicin hydrochloride;	1
+B22	2121040	Cpd	1	Cytarabine+Daunorubicin	0.5+0.5
+B23	2121040	Cpd	3	Cytarabine	0.01
+B24	2121040	Cpd	1	Venetoclax+Idasanutlin	0.5+0.5
+C01	2121040	Cpd	3	Sunitinib	0.01000005
+C02	2121040	Cpd	3	Imatinib	0.01
+C03	2121040	Cpd	2	Ruxolitinib	0.1
+C04	2121040	Cpd	3	Tofacitinib (CP-690550,Tasocitinib)	0.01
+C05	2121040	Cpd	1	Dinaciclib (SCH727965)	1
+C06	2121040	Cpd	2	Etoposide	0.2
+C07	2121040	Cpd	2	Doxorubicin	0.1
+C08	2121040	Cpd	1	Doxorubicin	1
+C09	2121040	Cpd	2	5-Fluorouracil	0.100056769
+C10	2121040	Cpd	1	Cobimetinib	1
+C11	2121040	DMSO	D		
+C12	2121040	Cpd	1	Thiotepa	1
+C13	2121040	Cpd	2	Dasatinib	0.1
+C14	2121040	Cpd	1	Everolimus	1
+C15	2121040	DMSO	D		
+C16	2121040	Cpd	1	Cytarabine+Etopside	0.5+1
+C17	2121040	Cpd	2	Thiotepa	0.1
+C18	2121040	Cpd	2	Cytarabine+Daunorubicin	0.05+0.05
+C19	2121040	Cpd	1	Doxorubicin	1
+C20	2121040	Cpd	3	Dinaciclib (SCH727965)	0.01
+C21	2121040	Cpd	3	Clofarabine	0.01
+C22	2121040	Cpd	2	Capecitabine	0.1
+C23	2121040	Cpd	1	Quizartinib (AC220)	1
+C24	2121040	Cpd	2	CC885	0.1
+D01	2121040	Cpd	3	Ruxolitinib	0.01
+D02	2121040	Cpd	1	CC885	1
+D03	2121040	Cpd	1	Ivosidenib	1
+D04	2121040	Cpd	3	Decitabine	0.01
+D05	2121040	Cpd	2	Nintedanib (BIBF 1120)	0.1
+D06	2121040	Cpd	2	Capecitabine	0.1
+D07	2121040	Cpd	1	5-Fluorouracil	1.000567689
+D08	2121040	Cpd	1	Venetoclax+Quizartinib	0.5+0.5
+D09	2121040	Cpd	2	5-Azacytidine	0.3
+D10	2121040	Cpd	3	Nintedanib (BIBF 1120)	0.01
+D11	2121040	Cpd	1	Venetoclax+Dinaciclib	0.5+0.5
+D12	2121040	DMSO	D		
+D13	2121040	Cpd	3	Clofarabine	0.01
+D14	2121040	Cpd	2	Dabrafenib (GSK2118436)	0.1
+D15	2121040	Cpd	3	Gefitinib	0.01
+D16	2121040	DMSO	D		
+D17	2121040	Cpd	3	Thiotepa	0.01
+D18	2121040	Cpd	2	Decitabine	0.1
+D19	2121040	Cpd	3	5-Azacytidine	0.03
+D20	2121040	Cpd	3	Quizartinib (AC220)	0.01
+D21	2121040	Cpd	2	Clofarabine	0.1
+D22	2121040	Cpd	1	6-Mercaptopurine	0.1
+D23	2121040	Cpd	3	Crenolanib	0.01
+D24	2121040	Cpd	2	Quizartinib (AC220)	0.1
+E01	2121040	Cpd	3	Etoposide	0.02
+E02	2121040	DMSO	D		
+E03	2121040	Cpd	1	Hydroxyurea	1
+E04	2121040	Cpd	1	5-Azacytidine	3
+E05	2121040	Cpd	1	Gefitinib	1
+E06	2121040	Cpd	1	Capecitabine	1
+E07	2121040	Cpd	1	Gefitinib	1
+E08	2121040	Cpd	1	5-Fluorouracil	1.000567689
+E09	2121040	DMSO	D		
+E10	2121040	Cpd	2	W9A	0.1
+E11	2121040	Cpd	3	Cytarabine+Daunorubicin	0.005+0.005
+E13	2121040	Cpd	2	Panobinostat	0.5
+E14	2121040	Cpd	2	Thiotepa	0.1
+E15	2121040	Cpd	3	Pentostatin	0.01
+E16	2121040	Cpd	1	Panobinostat	5
+E17	2121040	DMSO	D		
+E18	2121040	Cpd	1	Enasedinib	1
+E19	2121040	Cpd	3	Cytarabine+Mitoxantrone	0.005+0.005
+E20	2121040	Cpd	1	Temsirolimus	1
+E21	2121040	Cpd	2	Panobinostat	0.5
+E22	2121040	Cpd	3	W9A	0.01
+E23	2121040	Cpd	2	Prednisolone	0.1
+E24	2121040	Cpd	2	Ivosidenib	0.1
+F01	2121040	DMSO	D		
+F02	2121040	Cpd	2	Bortezomib	0.1
+F03	2121040	Cpd	1	D9A2	1
+F04	2121040	Cpd	3	Palbociclib	0.01
+F05	2121040	Cpd	1	Pentostatin	1
+F06	2121040	Cpd	2	CC885	0.1
+F07	2121040	Cpd	1	Irinotecan	1
+F08	2121040	Cpd	1	CC885	1
+F09	2121040	Cpd	1	Ivosidenib	1
+F10	2121040	DMSO	D		
+F11	2121040	Cpd	3	Temsirolimus	0.01
+F12	2121040	Cpd	3	Venetoclax+Dasatinib	0.005+0.005
+F13	2121040	Cpd	2	Imatinib	0.1
+F14	2121040	Cpd	2	Imatinib	0.1
+F15	2121040	Cpd	2	Venetoclax+Ruxolitinib	0.05+0.05
+F16	2121040	Cpd	3	Rapamycin (Sirolimus)	0.01
+F17	2121040	Cpd	2	Temsirolimus	0.1
+F18	2121040	DMSO	D		
+F19	2121040	Cpd	3	Venetoclax+Trametinib	0.005+0.005
+F20	2121040	Cpd	2	Ivosidenib	0.1
+F21	2121040	Cpd	3	Imatinib	0.01
+F22	2121040	Cpd	3	Rapamycin (Sirolimus)	0.01
+F23	2121040	Cpd	3	Venetoclax+Quizartinib	0.005+0.005
+F24	2121040	Cpd	1	Clofarabine	1
+G01	2121040	Cpd	3	Venetoclax+Dinaciclib	0.005+0.005
+G03	2121040	Cpd	3	Belinostat	0.01
+G04	2121040	DMSO	D		
+G05	2121040	Cpd	1	Methotrexate	1
+G06	2121040	Cpd	2	Venetoclax+Trametinib	0.05+0.05
+G07	2121040	Cpd	2	Gefitinib	0.1
+G08	2121040	Cpd	3	Capecitabine	0.01
+G09	2121040	Cpd	2	CPD000466355;idarubicin hydrochloride;	0.1
+G10	2121040	Cpd	1	Nintedanib (BIBF 1120)	1
+G11	2121040	Cpd	1	Prednisolone	1
+G12	2121040	Cpd	3	Palbociclib	0.01
+G14	2121040	Cpd	1	Lestaurtinib	1
+G15	2121040	Cpd	2	Decitabine	0.1
+G16	2121040	Cpd	2	Sunitinib	0.100000495
+G17	2121040	Cpd	1	Methotrexate	1
+G18	2121040	Cpd	1	Venetoclax+Dasatinib	0.5+0.5
+G19	2121040	DMSO	D		
+G20	2121040	Cpd	1	Cytarabine+Mitoxantrone	0.5+0.5
+G21	2121040	Cpd	2	Crenolanib	0.1
+G22	2121040	Cpd	2	Tofacitinib (CP-690550,Tasocitinib)	0.1
+G23	2121040	Cpd	3	Ivosidenib	0.01
+G24	2121040	Cpd	3	Crenolanib	0.01
+H01	2121040	Cpd	1	Sunitinib	1.000004952
+H02	2121040	Cpd	1	Rapamycin (Sirolimus)	1
+H03	2121040	DMSO	D		
+H04	2121040	Cpd	4	Cytarabine+Daunorubicin	5+5
+H05	2121040	Cpd	1	W9A	1
+H06	2121040	Cpd	1	Clofarabine	1
+H07	2121040	Cpd	1	Capecitabine	1
+H08	2121040	Cpd	3	Irinotecan	0.01
+H09	2121040	Cpd	2	PKC-412(Midostaurin)	0.1
+H10	2121040	Cpd	3	PKC-412(Midostaurin)	0.01
+H11	2121040	Cpd	2	Hydroxyurea	0.1
+H12	2121040	Cpd	3	Sunitinib	0.01000005
+H13	2121040	Cpd	2	Pazopanib	0.0443
+H14	2121040	Cpd	3	Venetoclax+Quizartinib	0.005+0.005
+H15	2121040	Cpd	1	5-Azacytidine	3
+H16	2121040	Cpd	2	Doxorubicin	0.1
+H17	2121040	Cpd	1	Cytarabine+Etopside	0.5+1
+H18	2121040	Cpd	3	Panobinostat	0.05
+H19	2121040	Cpd	1	Sorafenib	1
+H20	2121040	DMSO	D		
+H21	2121040	Cpd	1	Mitoxantrone	1
+H22	2121040	Cpd	3	Mitoxantrone	0.01
+H23	2121040	Cpd	2	Ruxolitinib	0.1
+H24	2121040	Cpd	2	6-Mercaptopurine	0.01
+I01	2121040	Cpd	1	Cytarabine+Daunorubicin	0.5+0.5
+I03	2121040	Cpd	3	Pazopanib	0.00443
+I04	2121040	Cpd	2	Venetoclax+Ruxolitinib	0.05+0.05
+I05	2121040	Cpd	2	PKC-412(Midostaurin)	0.1
+I06	2121040	DMSO	D		
+I07	2121040	Cpd	3	Everolimus	0.01
+I08	2121040	Cpd	2	Cytarabine+Mitoxantrone	0.05+0.05
+I09	2121040	Cpd	2	Mitoxantrone	0.1
+I10	2121040	Cpd	2	Sorafenib	0.1
+I11	2121040	Cpd	1	Mitoxantrone	1
+I12	2121040	Cpd	2	Venetoclax+Quizartinib	0.05+0.05
+I13	2121040	Cpd	3	Enasedinib	0.01
+I14	2121040	Cpd	2	Enasedinib	0.1
+I15	2121040	Cpd	1	Decitabine	1
+I16	2121040	Cpd	1	Cytarabine	1
+I17	2121040	Cpd	3	Venetoclax+Ruxolitinib	0.005+0.005
+I18	2121040	Cpd	1	CPD000466355;idarubicin hydrochloride;	1
+I19	2121040	Cpd	2	Venetoclax+Quizartinib	0.05+0.05
+I20	2121040	Cpd	3	5-Azacytidine	0.03
+I21	2121040	DMSO	D		
+I22	2121040	Cpd	1	Belinostat	1
+I23	2121040	Cpd	2	Bortezomib	0.1
+I24	2121040	Cpd	1	Romidepsin	2
+J01	2121040	Cpd	1	AP24534  Ponatinib	1
+J02	2121040	Cpd	2	Gefitinib	0.1
+J03	2121040	Cpd	3	Lestaurtinib	0.01
+J04	2121040	Cpd	3	6-Mercaptopurine	0.001
+J05	2121040	DMSO	D		
+J06	2121040	Cpd	1	Panobinostat	5
+J07	2121040	Cpd	1	Temsirolimus	1
+J08	2121040	Cpd	1	Crenolanib	1
+J09	2121040	Cpd	3	Venetoclax+Ruxolitinib	0.005+0.005
+J10	2121040	Cpd	2	D9A2	0.1
+J11	2121040	Cpd	2	CPD000466355;idarubicin hydrochloride;	0.1
+J12	2121040	Cpd	2	Cytarabine	0.1
+J13	2121040	Cpd	3	CPD000466355;idarubicin hydrochloride;	0.01
+J14	2121040	Cpd	2	Venetoclax+Dasatinib	0.05+0.05
+J15	2121040	Cpd	1	Dasatinib	1
+J16	2121040	Cpd	1	6-Mercaptopurine	0.1
+J17	2121040	Cpd	1	Bortezomib	1
+J18	2121040	Cpd	1	Cobimetinib	1
+J19	2121040	Cpd	2	Venetoclax+Trametinib	0.05+0.05
+J20	2121040	Cpd	3	PKC-412(Midostaurin)	0.01
+J21	2121040	Cpd	1	Pazopanib	0.443
+J22	2121040	DMSO	D		
+J23	2121040	Cpd	3	Decitabine	0.01
+J24	2121040	Cpd	2	Methotrexate	0.1
+K01	2121040	Cpd	3	Dinaciclib (SCH727965)	0.01
+K02	2121040	Cpd	1	Imatinib	1
+K03	2121040	Cpd	1	Prednisolone	1
+K04	2121040	Cpd	1	Cytarabine+Mitoxantrone	0.5+0.5
+K05	2121040	Cpd	1	Imatinib	1
+K06	2121040	Cpd	3	Bortezomib	0.01
+K07	2121040	Cpd	1	Hydroxyurea	1
+K08	2121040	DMSO	D		
+K09	2121040	Cpd	2	Tofacitinib (CP-690550,Tasocitinib)	0.1
+K10	2121040	Cpd	3	Cytarabine	0.01
+K11	2121040	Cpd	2	6-Mercaptopurine	0.01
+K12	2121040	Cpd	1	Belinostat	1
+K13	2121040	Cpd	2	5-Fluorouracil	0.100056769
+K15	2121040	Cpd	1	Etoposide	2
+K16	2121040	DMSO	D		
+K17	2121040	Cpd	1	Venetoclax+Dasatinib	0.5+0.5
+K18	2121040	Cpd	1	Ruxolitinib	1
+K19	2121040	Cpd	3	AP24534  Ponatinib	0.01
+K20	2121040	Cpd	2	Belinostat	0.1
+K21	2121040	Cpd	2	Lestaurtinib	0.1
+K22	2121040	Cpd	3	Bortezomib	0.01
+K23	2121040	DMSO	D		
+K24	2121040	Cpd	2	Quizartinib (AC220)	0.1
+L01	2121040	Cpd	3	Venetoclax+Idasanutlin	0.005+0.005
+L02	2121040	Cpd	3	Hydroxyurea	0.01
+L03	2121040	Cpd	1	Tofacitinib (CP-690550,Tasocitinib)	1
+L04	2121040	Cpd	2	Cobimetinib	0.1
+L05	2121040	Cpd	2	Venetoclax+Dinaciclib	0.05+0.05
+L06	2121040	Cpd	1	Abemaciclib	1
+L07	2121040	DMSO	D		
+L08	2121040	Cpd	3	Everolimus	0.01
+L09	2121040	Cpd	2	Clofarabine	0.1
+L10	2121040	Cpd	3	CPD000466355;idarubicin hydrochloride;	0.01
+L11	2121040	Cpd	3	Nintedanib (BIBF 1120)	0.01
+L12	2121040	Cpd	2	AP24534  Ponatinib	0.1
+L13	2121040	Cpd	1	Venetoclax+Idasanutlin	0.5+0.5
+L14	2121040	Cpd	3	Ivosidenib	0.01
+L15	2121040	DMSO	D		
+L16	2121040	Cpd	3	D9A2	0.01
+L17	2121040	Cpd	3	Capecitabine	0.01
+L18	2121040	Cpd	3	Ruxolitinib	0.01
+L19	2121040	Cpd	1	Sunitinib	1.000004952
+L20	2121040	Cpd	4	Cytarabine+Daunorubicin	5+5
+L21	2121040	Cpd	2	Rapamycin (Sirolimus)	0.1
+L22	2121040	Cpd	1	Pazopanib	0.443
+L23	2121040	Cpd	3	Abemaciclib	0.01
+L24	2121040	DMSO	D		
+M01	2121040	Cpd	2	Abemaciclib	0.1
+M02	2121040	Cpd	1	Crenolanib	1
+M03	2121040	Cpd	1	Lestaurtinib	1
+M04	2121040	Cpd	1	Venetoclax+Dinaciclib	0.5+0.5
+M05	2121040	Cpd	2	Pentostatin	0.1
+M06	2121040	Cpd	1	Decitabine	1
+M07	2121040	Cpd	3	Dabrafenib (GSK2118436)	0.01
+M08	2121040	Cpd	2	Etoposide	0.2
+M09	2121040	Cpd	2	Temsirolimus	0.1
+M10	2121040	DMSO	D		
+M11	2121040	Cpd	1	Thiotepa	1
+M12	2121040	Cpd	3	Venetoclax+Trametinib	0.005+0.005
+M13	2121040	Cpd	2	Sorafenib	0.1
+M14	2121040	DMSO	D		
+M15	2121040	Cpd	3	Lestaurtinib	0.01
+M16	2121040	Cpd	3	Cobimetinib	0.01
+M17	2121040	Cpd	3	W9A	0.01
+M18	2121040	Cpd	2	Venetoclax+Dinaciclib	0.05+0.05
+M19	2121040	Cpd	3	Doxorubicin	0.01
+M20	2121040	Cpd	1	Dabrafenib (GSK2118436)	1
+M21	2121040	Cpd	2	Cytarabine+Etopside	0.05+0.1
+M22	2121040	Cpd	2	Cytarabine	0.1
+M23	2121040	Cpd	2	Lestaurtinib	0.1
+M24	2121040	Cpd	2	Venetoclax+Idasanutlin	0.05+0.05
+N01	2121040	Cpd	1	W9A	1
+N02	2121040	Cpd	3	Cytarabine+Daunorubicin	0.005+0.005
+N03	2121040	Cpd	2	Romidepsin	0.2
+N04	2121040	Cpd	1	Venetoclax+Ruxolitinib	0.5+0.5
+N05	2121040	Cpd	2	Crenolanib	0.1
+N06	2121040	Cpd	1	Bortezomib	1
+N07	2121040	Cpd	3	Pazopanib	0.00443
+N08	2121040	Cpd	2	Dasatinib	0.1
+N09	2121040	DMSO	D		
+N10	2121040	Cpd	1	Venetoclax+Ruxolitinib	0.5+0.5
+N11	2121040	Cpd	2	Cytarabine+Daunorubicin	0.05+0.05
+N12	2121040	Cpd	2	Venetoclax+Idasanutlin	0.05+0.05
+N13	2121040	DMSO	D		
+N14	2121040	Cpd	3	Dabrafenib (GSK2118436)	0.01
+N15	2121040	Cpd	1	D9A2	1
+N16	2121040	Cpd	2	Prednisolone	0.1
+N17	2121040	Cpd	2	Romidepsin	0.2
+N18	2121040	Cpd	2	Sunitinib	0.100000495
+N19	2121040	Cpd	3	Tofacitinib (CP-690550,Tasocitinib)	0.01
+N21	2121040	Cpd	1	Quizartinib (AC220)	1
+N22	2121040	Cpd	3	Prednisolone	0.01
+N23	2121040	Cpd	2	Rapamycin (Sirolimus)	0.1
+N24	2121040	Cpd	3	Enasedinib	0.01
+O01	2121040	Cpd	1	Palbociclib	1
+O02	2121040	Cpd	3	Sorafenib	0.01
+O03	2121040	Cpd	3	6-Mercaptopurine	0.001
+O04	2121040	Cpd	1	Sorafenib	1
+O05	2121040	Cpd	3	Romidepsin	0.02
+O06	2121040	Cpd	3	Methotrexate	0.01
+O07	2121040	Cpd	2	Dabrafenib (GSK2118436)	0.1
+O08	2121040	Cpd	1	Cytarabine	1
+O09	2121040	Cpd	3	Mitoxantrone	0.01
+O10	2121040	Cpd	2	Methotrexate	0.1
+O11	2121040	Cpd	2	5-Azacytidine	0.3
+O12	2121040	DMSO	D		
+O13	2121040	Cpd	1	Venetoclax+Quizartinib	0.5+0.5
+O14	2121040	Cpd	2	Everolimus	0.1
+O15	2121040	Cpd	2	Cytarabine+Etopside	0.05+0.1
+O16	2121040	Cpd	2	Venetoclax+Dasatinib	0.05+0.05
+O17	2121040	Cpd	1	Venetoclax+Trametinib	0.5+0.5
+O18	2121040	Cpd	2	Mitoxantrone	0.1
+O20	2121040	Cpd	3	Cytarabine+Etopside	0.005+0.01
+O21	2121040	Cpd	3	Pentostatin	0.01
+O22	2121040	Cpd	1	Etoposide	2
+O23	2121040	Cpd	3	Irinotecan	0.01
+O24	2121040	Cpd	3	Hydroxyurea	0.01
+P01	2121040	Cpd	2	W9A	0.1
+P02	2121040	Cpd	2	Cobimetinib	0.1
+P03	2121040	Cpd	3	Belinostat	0.01
+P04	2121040	Cpd	3	Doxorubicin	0.01
+P05	2121040	Cpd	2	Cytarabine+Mitoxantrone	0.05+0.05
+P06	2121040	Cpd	2	Enasedinib	0.1
+P07	2121040	Cpd	3	Panobinostat	0.05
+P08	2121040	Cpd	2	Dinaciclib (SCH727965)	0.1
+P09	2121040	Cpd	3	Dasatinib	0.01
+P10	2121040	Cpd	1	Dasatinib	1
+P11	2121040	DMSO	D		
+P12	2121040	Cpd	3	Abemaciclib	0.01
+P13	2121040	Cpd	3	Venetoclax+Idasanutlin	0.005+0.005
+P14	2121040	Cpd	3	Methotrexate	0.01
+P15	2121040	Cpd	3	5-Fluorouracil	0.010005677
+P16	2121040	Cpd	1	Nintedanib (BIBF 1120)	1
+P17	2121040	Cpd	1	Enasedinib	1
+P18	2121040	Cpd	2	Irinotecan	0.1
+P19	2121040	Cpd	1	Rapamycin (Sirolimus)	1
+P20	2121040	Cpd	2	Hydroxyurea	0.1
+P21	2121040	Cpd	2	Irinotecan	0.1
+P22	2121040	Cpd	1	Dinaciclib (SCH727965)	1
+P23	2121040	Cpd	3	Cobimetinib	0.01
+P24	2121040	Cpd	2	D9A2	0.1

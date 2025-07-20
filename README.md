@@ -33,13 +33,15 @@ You will need patchpy, which you will soon be able to find under https://github.
 
 You will have to set up a config folder that contains the config files describing the CellProfiler columns that you want to use and the locations of scripts for the predicting cell types and cell states. Defaults for the analyses that we performed - minus the paths to our local scripts - are located in `src/imscreenpy/config_files`.
 
+To make the workflow more efficient on a cohort level, you can set up an annotation file that can then be read by `main.py`, such that you do not have to specify all parameters of an individual experiment via command line arguments. `patchpy` can also work with such a file, so I would recommmend setting it up this way. An example file that lists the typical included columns is located in `pbmc_example_analyses/example_data/sample_annotations.xls`.
+
 
 ## Using imscreenpy
 
-We have used imscreenpy to analze data from peripheral blood mononuclear cells (PBMCs) and bone marrow mononuclear cells (BMMCs) as well as cell lines from other non-hematopoietic tissues. The full workflow as we use it in our work is executed by `main.py`, but we also provide notebooks that you may find instructive.
+We have used imscreenpy to analze data from peripheral blood mononuclear cells (PBMCs) and bone marrow mononuclear cells (BMMCs) as well as cell lines from other non-hematopoietic tissues. The full workflow as we use it in our work is executed by `main.py`, but we also provide notebooks that you may find instructive in `pbmc_example_analyses`.
 
 ### Analysis on PBMCs or BMMCs
-The folder `pbmc_example_analyses` contains scripts and notebooks that give an overview of imscreenpy's functionalities for the analysis of PBMCs or BMMNCs. If you want to learn more about how to analyse this type of screening data, this folder is a good place to start.
+The folder `pbmc_example_analyses` contains scripts and notebooks that give an overview of imscreenpy's functionalities for the analysis of PBMCs or BMMNCs. We have applied these analyses in a manuscript that should be published soon. If you want to learn more about how to analyse this type of screening data, this folder is a good place to start.
 
 ### Analysis as described in *Strohmenger et al.*
 If you want to reproduce the analysis from *Strohmenger et al.* and run `main.py` locally with pre-trained autoencoders from `patchpy`, you will have to change the paths in `imscreenpy/config_files/nb_paths_and_patterns.txt` to match your local system. The full analysis from that manuscript will be publicly available soon and we will then provide an update here.
